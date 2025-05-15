@@ -7,7 +7,7 @@
   "homepage": "https://github.com/factoriolib/flib",
   "description": "A utility library for manipulating Factorio blueprints.",
   "factorio_version": "2.0",
-  "dependencies": [ "base >= 2.0.0" ],
+  "dependencies": [ "base >= 2.0.39" ],
   "package": {
     "git_publish_branch": "main",
     "ignore": [ "crowdin.yml", "stylua.toml", "tests" ],
