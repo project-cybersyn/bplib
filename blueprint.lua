@@ -1,10 +1,11 @@
--- Utilities relating to blueprints.
+--------------------------------------------------------------------------------
+-- BLUEPRINT LIBRARY
+--------------------------------------------------------------------------------
 
 if ... ~= "__bplib__.blueprint" then return require("__bplib__.blueprint") end
 
 local mlib = require("__bplib__.math")
 
-local PI = math.pi
 local floor = math.floor
 local pos_get = mlib.pos_get
 local pos_set = mlib.pos_set
@@ -20,10 +21,8 @@ local bbox_round = mlib.bbox_round
 local pos_set_center = mlib.pos_set_center
 local bbox_flip_horiz = mlib.bbox_flip_horiz
 local bbox_flip_vert = mlib.bbox_flip_vert
-local rect_from_bbox = mlib.rect_from_bbox
-local rect_rotate = mlib.rect_rotate
-local bbox_union_rect = mlib.bbox_union_rect
-local rect_translate = mlib.rect_translate
+local bbox_union = mlib.bbox_union
+
 local ZEROES = { 0, 0 }
 
 local lib = {}
@@ -158,7 +157,7 @@ local train_stop_table = {
 ---Use an empirical lookup table to generate bounding boxes for particular
 ---known entity types.
 ---@param table bplib.SnapDataPerDirection
----@return fun(bp_entity: BlueprintEntity, eproto: LuaEntityPrototype): bplib.Rect
+---@return fun(bp_entity: BlueprintEntity, eproto: LuaEntityPrototype): BoundingBox
 local function table_bbox_getter(table)
 	---@param bp_entity BlueprintEntity
 	return function(bp_entity)
@@ -166,11 +165,10 @@ local function table_bbox_getter(table)
 		local x, y = pos_get(bp_entity.position)
 		local adjustments = table[dir]
 		if not adjustments then adjustments = { 0, 0, 0, 0 } end
-		local box = {
+		return {
 			{ x + adjustments[1], y + adjustments[2] },
 			{ x + adjustments[3], y + adjustments[4] },
 		}
-		return rect_from_bbox(box)
 	end
 end
 
@@ -179,11 +177,11 @@ end
 ---@param bp_entity BlueprintEntity
 ---@param eproto LuaEntityPrototype
 local function default_bbox(bp_entity, eproto)
-	local erect = rect_from_bbox(eproto.collision_box)
+	local ebox = bbox_new(eproto.collision_box)
 	local dir = bp_entity.direction or 0
-	rect_rotate(erect, ZEROES, dir * PI / 8)
-	rect_translate(erect, bp_entity.position)
-	return erect
+	bbox_rotate_ortho(ebox, ZEROES, floor(dir / 4))
+	bbox_translate(ebox, 1, bp_entity.position)
+	return ebox
 end
 
 local empirical_bbox_types = {
@@ -213,7 +211,7 @@ local snappable_types = {
 ---Get the bounding box of a single blueprint entity in blueprint space.
 ---@param bp_entity BlueprintEntity
 ---@param eproto LuaEntityPrototype
----@return bplib.Rect
+---@return BoundingBox
 local function get_bp_entity_bbox(bp_entity, eproto)
 	local bbox_getter = empirical_bbox_types[eproto.type]
 	if bbox_getter then
@@ -255,10 +253,10 @@ end
 ---entity within the blueprint that will cause implied snapping for relative
 ---placement, if any.
 ---@param bp_entities BlueprintEntity[] A *nonempty* set of blueprint entities.
----@param rects? bplib.Rect[] If provided, will be filled with the bounding boxes of each entity by index.
+---@param bounding_boxes? BoundingBox[] If provided, will be filled with the bounding boxes of each entity by index.
 ---@return BoundingBox bbox The bounding box of the blueprint in blueprint space
 ---@return uint? snap_index The index of the entity that causes implied snapping, if any.
-local function get_bp_bbox(bp_entities, rects)
+local function get_bp_bbox(bp_entities, bounding_boxes)
 	local snap_index = nil
 
 	local e1x, e1y = pos_get(bp_entities[1].position)
@@ -277,9 +275,9 @@ local function get_bp_bbox(bp_entities, rects)
 		end
 
 		-- Get bbox for entity and union it with existing bbox.
-		local erect = get_bp_entity_bbox(bp_entity, eproto)
-		if rects then rects[i] = erect end
-		bbox_union_rect(bpspace_bbox, erect)
+		local ebox = get_bp_entity_bbox(bp_entity, eproto)
+		if bounding_boxes then bounding_boxes[i] = ebox end
+		bbox_union(bpspace_bbox, ebox)
 	end
 
 	bbox_round(bpspace_bbox)
@@ -659,43 +657,6 @@ local function get_bp_world_positions(
 			})
 		end
 
-		-- XXX: draw rect
-		-- local erect = rect_new(self.bp_to_rect[i])
-		-- rect_translate(erect, bp_center, -1)
-		-- rect_translate(erect, translation_center, 1)
-		-- rendering.draw_line({
-		-- 	color = { r = 0, g = 0, b = 1, a = 1 },
-		-- 	width = 1,
-		-- 	from = erect[1],
-		-- 	to = erect[2],
-		-- 	surface = self.surface,
-		-- 	time_to_live = 1800,
-		-- })
-		-- rendering.draw_line({
-		-- 	color = { r = 0, g = 0, b = 1, a = 1 },
-		-- 	width = 1,
-		-- 	from = erect[2],
-		-- 	to = erect[3],
-		-- 	surface = self.surface,
-		-- 	time_to_live = 1800,
-		-- })
-		-- rendering.draw_line({
-		-- 	color = { r = 0, g = 0, b = 1, a = 1 },
-		-- 	width = 1,
-		-- 	from = erect[3],
-		-- 	to = erect[4],
-		-- 	surface = self.surface,
-		-- 	time_to_live = 1800,
-		-- })
-		-- rendering.draw_line({
-		-- 	color = { r = 0, g = 0, b = 1, a = 1 },
-		-- 	width = 1,
-		-- 	from = erect[4],
-		-- 	to = erect[1],
-		-- 	surface = self.surface,
-		-- 	time_to_live = 1800,
-		-- })
-
 		bp_to_world_pos[i] = epos
 		::continue::
 	end
@@ -724,7 +685,7 @@ end
 ---@field public flip_horizontal? boolean Whether the blueprint is flipped horizontally.
 ---@field public flip_vertical? boolean Whether the blueprint is flipped vertically.
 ---@field public bpspace_bbox? BoundingBox The bounding box of the blueprint in blueprint space.
----@field public bp_to_rect? {[int]: bplib.Rect} A mapping of the blueprint entity indices to the bounding rects of the entities in blueprint space.
+---@field public bp_to_bbox? {[int]: BoundingBox} A mapping of the blueprint entity indices to the bounding rects of the entities in blueprint space.
 ---@field public bp_to_world_pos? {[int]: MapPosition} A mapping of the blueprint entity indices to positions in worldspace of where those entities will be when the blueprint is built.
 ---@field public snap? TilePosition Blueprint snapping grid size
 ---@field public snap_offset? TilePosition Blueprint snapping grid offset
@@ -855,9 +816,9 @@ function BlueprintInfo:get_bpspace_bbox()
 		local bp_entities = self:get_entities()
 		if not bp_entities or #bp_entities == 0 then return end
 
-		local rects = {} -- XXX
-		self.bp_to_rect = rects
-		local bbox, snap_index = get_bp_bbox(bp_entities, rects)
+		local bboxes = {} -- XXX
+		self.bp_to_bbox = bboxes
+		local bbox, snap_index = get_bp_bbox(bp_entities, bboxes)
 		self.bpspace_bbox = bbox
 		self.snap_index = snap_index
 	end
