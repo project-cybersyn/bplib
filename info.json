@@ -1,0 +1,18 @@
+{
+  "name": "bplib",
+  "version": "0.1.0",
+  "title": "Blueprint Library",
+  "author": "The LORD thy GOD",
+  "contact": "https://github.com/factoriolib/flib",
+  "homepage": "https://github.com/factoriolib/flib",
+  "description": "A utility library for manipulating Factorio blueprints.",
+  "factorio_version": "2.0",
+  "dependencies": [ "base >= 2.0.0" ],
+  "package": {
+    "git_publish_branch": "main",
+    "ignore": [ "crowdin.yml", "stylua.toml", "tests" ],
+    "scripts": {
+    },
+    "sync_portal_details": true
+  }
+}
