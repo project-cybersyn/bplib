@@ -95,9 +95,11 @@ local SnapType = {
 ---Rail data associated with each valid direction of a given rail type
 ---@alias bplib.SnapDataPerDirection {[uint]: bplib.SnapData}
 
+---Treat curved-rail-a as 2x4 centered on its position. See:
+---https://forums.factorio.com/viewtopic.php?p=613478#p613478
 ---@type bplib.SnapDataPerDirection
 local curved_rail_a_table = {
-	[0] = { -2, -3, 1, 2, 1, 2 },
+	[0] = { -1, -2, 1, 2, 1, 2 },
 	[2] = { -1, -3, 2, 2, 1, 2 },
 	[4] = { -2, -2, 3, 1, 2, 1 },
 	[6] = { -2, -1, 3, 2, 2, 1 },
@@ -107,9 +109,11 @@ local curved_rail_a_table = {
 	[14] = { -3, -2, 2, 1, 2, 1 },
 }
 
+---Treat curved-rail-b as a 4x4 centered on its position.
+---This is from empirical observation in-game.
 ---@type bplib.SnapDataPerDirection
 local curved_rail_b_table = {
-	[0] = { -3, -3, 2, 3, 1, 1 },
+	[0] = { -2, -2, 2, 2, 1, 1 },
 	[2] = { -2, -3, 3, 3, 1, 1 },
 	[4] = { -3, -3, 3, 2, 1, 1 },
 	[6] = { -3, -2, 3, 3, 1, 1 },
@@ -191,6 +195,7 @@ local empirical_bbox_types = {
 	["elevated-straight-rail"] = table_bbox_getter(straight_rail_table),
 	["elevated-curved-rail-a"] = table_bbox_getter(curved_rail_a_table),
 	["elevated-curved-rail-b"] = table_bbox_getter(curved_rail_b_table),
+	["train-stop"] = table_bbox_getter(train_stop_table),
 }
 
 local snappable_types = {
@@ -216,6 +221,34 @@ local function get_bp_entity_bbox(bp_entity, eproto)
 	else
 		return default_bbox(bp_entity, eproto)
 	end
+end
+
+---Transform a single entity's position in blueprint space based on rotation
+---and flip parameters of the blueprint placement operation.
+---@param bp_entity BlueprintEntity
+---@param bp_center MapPosition
+---@param bp_rot_n int
+---@param flip_horizontal boolean?
+---@param flip_vertical boolean?
+local function get_bp_entity_transformed_pos(
+	bp_entity,
+	bp_center,
+	bp_rot_n,
+	flip_horizontal,
+	flip_vertical
+)
+	-- Get bpspace position
+	local epos = pos_new(bp_entity.position)
+	-- Move to central frame of reference
+	pos_add(epos, -1, bp_center)
+	-- Apply flip
+	local rx, ry = pos_get(epos)
+	if flip_horizontal then rx = -rx end
+	if flip_vertical then ry = -ry end
+	pos_set(epos, rx, ry)
+	-- Apply blueprint rotation
+	pos_rotate_ortho(epos, ZEROES, -bp_rot_n)
+	return epos
 end
 
 ---Get the net bounding box of an entire set of BP entities. Also locates an
@@ -254,26 +287,78 @@ local function get_bp_bbox(bp_entities, rects)
 	return bpspace_bbox, snap_index
 end
 
+---@param length uint
+---@param target_parity 1|2 1 = odd, 2 = even
+---@param half_pos int
+---@return bplib.SnapType
+---@return int
+local function compute_single_axis_snap_type(length, target_parity, half_pos)
+	local offset = 0
+	if floor(length) % 2 == 0 then
+		-- Center will be on grid point, meaning we are SnapType 1,3,5
+		if target_parity == 1 then
+			-- Target parity is odd. If we are a multiple of 4 halfsteps away,
+			-- our parity must also be odd.
+			if half_pos % 4 == 0 then
+				return SnapType.ODD_GRID_POINT, offset
+			else
+				return SnapType.EVEN_GRID_POINT, offset
+			end
+		else
+			if half_pos % 4 == 0 then
+				return SnapType.EVEN_GRID_POINT, offset
+			else
+				return SnapType.ODD_GRID_POINT, offset
+			end
+		end
+	else
+		-- I have ABSOLUTELY NO IDEA why this is needed but it works.
+		if half_pos > 0 then
+			half_pos = -half_pos
+			offset = 1
+		end
+		-- Center will be between grid points, meaning we are SnapType 2,4,6
+		if target_parity == 1 then
+			-- Target parity is odd.
+			if half_pos % 4 == 1 then
+				-- Center of an even tile shifted by 1 half step
+				-- gives an odd grid point.
+				return SnapType.EVEN_TILE, offset
+			else
+				return SnapType.ODD_TILE, offset
+			end
+		else
+			if half_pos % 4 == 1 then
+				return SnapType.ODD_TILE, offset
+			else
+				return SnapType.EVEN_TILE, offset
+			end
+		end
+	end
+end
+
 ---Get information on how the cursor position needs to be snapped when placing
 ---a blueprint with relative positioning.
----@param bp_entities BlueprintEntity[]
----@param bbox BoundingBox As computed previously by `get_bp_bbox`
----@param snap_index uint? As computed previously by `get_bp_bbox`
+---@param bbox BoundingBox Transformed bpspace bbox.
+---@param snap_entity BlueprintEntity? Entity governing snapping, if any
+---@param snap_entity_pos MapPosition? Transformed bpspace position of the snap entity.
 ---@return bplib.SnapType xsnap Snapping type for the X-axis.
 ---@return bplib.SnapType ysnap Snapping type for the Y-axis.
-local function get_bp_relative_snapping(bp_entities, bbox, snap_index)
+---@return int xofs Offset to apply to the X-axis.
+---@return int yofs Offset to apply to the Y-axis.
+local function get_bp_relative_snapping(bbox, snap_entity, snap_entity_pos)
 	local l, t, r, b = bbox_get(bbox)
 	local w, h = r - l, b - t
 	local xsnap, ysnap = SnapType.GRID_POINT, SnapType.GRID_POINT
-	if not snap_index then
+	local xofs, yofs = 0, 0
+	if not snap_entity then
 		-- Simple snapping to tile or grid point.
 		if floor(w) % 2 ~= 0 then xsnap = SnapType.TILE end
 		if floor(h) % 2 ~= 0 then ysnap = SnapType.TILE end
-		return xsnap, ysnap
+		return xsnap, ysnap, xofs, yofs
 	end
 
 	-- Find snap entity
-	local snap_entity = bp_entities[snap_index]
 	local proto = prototypes.entity[snap_entity.name]
 	local snap_entity_type = proto.type
 	local snap_table =
@@ -283,85 +368,33 @@ local function get_bp_relative_snapping(bp_entities, bbox, snap_index)
 	-- Compute number of half integer steps from origin to controlling snap
 	-- entity pos.
 	local cx, cy = (l + r) / 2, (t + b) / 2
-	local spos = pos_new(snap_entity.position)
+	local spos = pos_new(snap_entity_pos)
 	pos_add(spos, -1, { cx, cy })
 	spos[1] = mlib.round(spos[1] / 0.5, 1)
 	spos[2] = mlib.round(spos[2] / 0.5, 1)
 
 	-- Find center parity that yields desired parity at snap entity position.
-	-- X snapping
-	if floor(w) % 2 == 0 then
-		-- Center will be on grid point, meaning we are SnapType 1,3,5
-		if snap_target_parity[1] == 1 then
-			-- Target parity is odd. If we are a multiple of 4 halfsteps away,
-			-- our parity must also be odd.
-			if spos[1] % 4 == 0 then
-				xsnap = SnapType.ODD_GRID_POINT
-			else
-				xsnap = SnapType.EVEN_GRID_POINT
-			end
-		else
-			if spos[1] % 4 == 0 then
-				xsnap = SnapType.EVEN_GRID_POINT
-			else
-				xsnap = SnapType.ODD_GRID_POINT
-			end
-		end
-	else
-		-- Center will be between grid points, meaning we are SnapType 2,4,6
-		if snap_target_parity[1] == 1 then
-			-- Target parity is odd.
-			if spos[1] % 4 == 1 then
-				-- Center of an even tile shifted by 1 half step
-				-- gives an odd grid point.
-				xsnap = SnapType.EVEN_TILE
-			else
-				xsnap = SnapType.ODD_TILE
-			end
-		else
-			if spos[1] % 4 == 1 then
-				xsnap = SnapType.ODD_TILE
-			else
-				xsnap = SnapType.EVEN_TILE
-			end
-		end
-	end
-	-- Y snapping
-	if floor(h) % 2 == 0 then
-		-- Center will be on grid point, meaning we are SnapType 1,3,5
-		if snap_target_parity[2] == 1 then
-			-- Target parity is odd. If we are a multiple of 4 halfsteps away,
-			-- our parity must also be odd.
-			if spos[2] % 4 == 0 then
-				ysnap = SnapType.ODD_GRID_POINT
-			else
-				ysnap = SnapType.EVEN_GRID_POINT
-			end
-		else
-			if spos[2] % 4 == 0 then
-				ysnap = SnapType.EVEN_GRID_POINT
-			else
-				ysnap = SnapType.ODD_GRID_POINT
-			end
-		end
-	else
-		-- Center will be between grid points, meaning we are SnapType 2,4,6
-		if snap_target_parity[2] == 1 then
-			-- Target parity is odd.
-			if spos[2] % 4 == 1 then
-				ysnap = SnapType.EVEN_TILE
-			else
-				ysnap = SnapType.ODD_TILE
-			end
-		else
-			if spos[2] % 4 == 1 then
-				ysnap = SnapType.ODD_TILE
-			else
-				ysnap = SnapType.EVEN_TILE
-			end
-		end
-	end
-	return xsnap, ysnap
+	xsnap, xofs = compute_single_axis_snap_type(w, snap_target_parity[1], spos[1])
+	ysnap, yofs = compute_single_axis_snap_type(h, snap_target_parity[2], spos[2])
+
+	game.print({
+		"",
+		"snap entity: ",
+		snap_entity.name,
+		" entity snap parity: ",
+		snap_target_parity[1],
+		" ",
+		snap_target_parity[2],
+		" spos: ",
+		spos[1],
+		",",
+		spos[2],
+		" final snap parities: ",
+		SnapType[xsnap],
+		" ",
+		SnapType[ysnap],
+	}, { skip = defines.print_skip.never, sound = defines.print_sound.never })
+	return xsnap, ysnap, xofs, yofs
 end
 
 ---Snap a coordinate to the appropriate grid point or tile based on the
@@ -380,7 +413,14 @@ local function snap_to(coord, snap_type)
 		return snapped
 	elseif snap_type == SnapType.EVEN_TILE then
 		local snapped = floor(coord)
-		if snapped % 2 ~= 0 then snapped = snapped + 1 end
+		if snapped % 2 ~= 0 then snapped = snapped - 1 end
+		game.print({
+			"",
+			"Snap to EVEN_TILE: snapped ",
+			coord,
+			" to ",
+			snapped + 0.5,
+		}, { skip = defines.print_skip.never, sound = defines.print_sound.never })
 		return snapped + 0.5
 	elseif snap_type == SnapType.ODD_GRID_POINT then
 		local snapped = floor(coord)
@@ -388,7 +428,7 @@ local function snap_to(coord, snap_type)
 		return snapped
 	elseif snap_type == SnapType.ODD_TILE then
 		local snapped = floor(coord)
-		if snapped % 2 == 0 then snapped = snapped + 1 end
+		if snapped % 2 == 0 then snapped = snapped - 1 end
 		return snapped + 0.5
 	end
 
@@ -504,11 +544,54 @@ local function get_bp_world_positions(
 		end
 	else
 		-- Relative snapping case.
-		local xst, yst = get_bp_relative_snapping(bp_entities, bbox, snap_index)
-		-- If rotating an odd direction, interchange x and y snapping
-		if bp_rot_n % 2 == 1 then
-			xst, yst = yst, xst
+		-- Compute bbox center
+		local cx, cy = (l + r) / 2, (t + b) / 2
+		-- Zero the center
+		bbox_translate(placement_bbox, 1, -cx, -cy)
+		-- Enact flip/rot
+		if flip_horizontal then bbox_flip_horiz(placement_bbox, 0) end
+		if flip_vertical then bbox_flip_vert(placement_bbox, 0) end
+		bbox_rotate_ortho(placement_bbox, ZEROES, -bp_rot_n)
+
+		local snap_entity = bp_entities[snap_index]
+		local xst, yst, xso, yso
+		if snap_entity then
+			-- Transform snap entity position and compute snapping based on that
+			local snap_entity_pos = get_bp_entity_transformed_pos(
+				snap_entity,
+				bp_center,
+				bp_rot_n,
+				flip_horizontal,
+				flip_vertical
+			)
+			xst, yst, xso, yso =
+				get_bp_relative_snapping(placement_bbox, snap_entity, snap_entity_pos)
+		else
+			-- Compute relative snapping based on bbox dimensions only (1x1 snapping)
+			xst, yst, xso, yso = get_bp_relative_snapping(placement_bbox, nil)
 		end
+		bbox_translate(placement_bbox, 1, xso, yso)
+
+		-- XXX: remove
+		do
+			local pl, pt, pr, pb = bbox_get(placement_bbox)
+			local w, h = pr - pl, pb - pt
+			game.print({
+				"",
+				"bbox dims ",
+				w,
+				"x",
+				h,
+				" rotated snap parities: ",
+				SnapType[xst],
+				" ",
+				SnapType[yst],
+			}, {
+				skip = defines.print_skip.never,
+				sound = defines.print_sound.never,
+			})
+		end
+
 		local sx, sy = snap_to(x, xst), snap_to(y, yst)
 		if debug_render_surface then
 			-- Debug: blue circle at snap point
@@ -523,14 +606,8 @@ local function get_bp_world_positions(
 			})
 		end
 
-		-- Compute bbox center
-		local cx, cy = (l + r) / 2, (t + b) / 2
-		-- Enact flip/rot
-		if flip_horizontal then bbox_flip_horiz(placement_bbox, cx) end
-		if flip_vertical then bbox_flip_vert(placement_bbox, cy) end
-		bbox_rotate_ortho(placement_bbox, { cx, cy }, -bp_rot_n)
 		-- Map center of bbox to snapped x,y
-		bbox_translate(placement_bbox, 1, sx - cx, sy - cy)
+		bbox_translate(placement_bbox, 1, sx, sy)
 
 		if debug_render_surface then
 			-- Debug: draw world bbox in blue
@@ -555,17 +632,15 @@ local function get_bp_world_positions(
 		if bp_entity_filter and not bp_entity_filter(bp_entity) then
 			goto continue
 		end
+
 		-- Get bpspace position
-		local epos = pos_new(bp_entity.position)
-		-- Move to central frame of reference
-		pos_add(epos, -1, bp_center)
-		-- Apply flip
-		local rx, ry = pos_get(epos)
-		if flip_horizontal then rx = -rx end
-		if flip_vertical then ry = -ry end
-		pos_set(epos, rx, ry)
-		-- Apply blueprint rotation
-		pos_rotate_ortho(epos, ZEROES, -bp_rot_n)
+		local epos = get_bp_entity_transformed_pos(
+			bp_entity,
+			bp_center,
+			bp_rot_n,
+			flip_horizontal,
+			flip_vertical
+		)
 		-- Translate back to worldspace
 		pos_add(epos, 1, translation_center)
 
