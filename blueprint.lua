@@ -39,62 +39,26 @@ end
 lib.get_actual_blueprint = get_actual_blueprint
 
 --------------------------------------------------------------------------------
--- BLUEPRINTINFO TYPE
+-- BLUEPRINTBASE
+-- Common interface for blueprints being setup or built.
 --------------------------------------------------------------------------------
 
----Class for end-to-end manipulation of blueprints. Lazily caches information
----about the blueprint and its entities as necessary.
----@class bplib.BlueprintInfo: bplib.BlueprintPlacementInfo
+---@class bplib.BlueprintBase
 ---@field public record? LuaRecord The base record being manipulated if any
 ---@field public stack? LuaItemStack The base item stack being manipulated if any
 ---@field public player LuaPlayer The player who is manipulating the blueprint.
 ---@field public actual? bplib.Blueprintish The actual blueprint involved, stripped of any containing books.
 ---@field public entities? BlueprintEntity[] The entities in the blueprint.
----@field public lazy_bp_to_world? LuaLazyLoadedValue<{[int]: LuaEntity}> A lazy mapping of the blueprint entities to the entities in the world.
----@field public bp_to_world? {[int]: LuaEntity} A mapping of the blueprint entity indices to the entities in the world.
----@field public world_to_bp? {[UnitNumber]: int} A mapping from world entity unit numbers to blueprint entity indices.
 ---@field public bpspace_bbox? BoundingBox The bounding box of the blueprint in blueprint space.
----@field public bp_to_bbox? {[int]: BoundingBox} A mapping of the blueprint entity indices to the bounding rects of the entities in blueprint space.
----@field public bp_to_world_pos? {[int]: MapPosition} A mapping of the blueprint entity indices to positions in worldspace of where those entities will be when the blueprint is built.
+---@field public snap? TilePosition Blueprint snapping grid size
+---@field public snap_offset? TilePosition Blueprint snapping grid offset
+---@field public snap_absolute? boolean Whether blueprint snapping is absolute or relative
 ---@field public debug? boolean Whether to draw debug graphics using `LuaRendering`
-local BlueprintInfo = {}
-BlueprintInfo.__index = BlueprintInfo
-lib.BlueprintInfo = BlueprintInfo
-
----@param setup_event EventData.on_player_setup_blueprint
-function BlueprintInfo:create_from_setup_event(setup_event)
-	local player = game.get_player(setup_event.player_index)
-	if not player then return nil end
-	local obj = setmetatable({
-		record = setup_event.record,
-		stack = setup_event.stack,
-		player = player,
-		lazy_bp_to_world = setup_event.mapping,
-	}, self)
-
-	return obj
-end
-
----@param event EventData.on_pre_build
-function BlueprintInfo:create_from_pre_build_event(event)
-	local player = game.get_player(event.player_index)
-	if not player or not player.is_cursor_blueprint() then return nil end
-	local obj = setmetatable({
-		record = player.cursor_record,
-		stack = player.cursor_stack,
-		player = player,
-		surface = player.surface,
-		position = event.position,
-		direction = event.direction,
-		flip_horizontal = event.flip_horizontal,
-		flip_vertical = event.flip_vertical,
-	}, self)
-
-	return obj
-end
+local BlueprintBase = {}
+BlueprintBase.__index = BlueprintBase
 
 ---Gets the actual blueprint being manipulated, stripped of containing books.
-function BlueprintInfo:get_actual()
+function BlueprintBase:get_actual()
 	if not self.actual then
 		self.actual = get_actual_blueprint(self.player, self.record, self.stack)
 		if self.actual then
@@ -106,9 +70,9 @@ function BlueprintInfo:get_actual()
 	return self.actual
 end
 
----Get the pickled entities from the blueprint
+---Get the stored entities from the blueprint
 ---@param force boolean? If `true`, forcibly refetches from the api even if cached.
-function BlueprintInfo:get_entities(force)
+function BlueprintBase:get_entities(force)
 	if force or not self.entities then
 		local actual = self:get_actual()
 		if not actual then return end
@@ -117,67 +81,8 @@ function BlueprintInfo:get_entities(force)
 	return self.entities
 end
 
----Retrieve a map from blueprint entity indices to the real-world entities
----that are being blueprinted. Only valid when a blueprint is being setup.
-function BlueprintInfo:get_bp_to_world()
-	if not self.bp_to_world then
-		if not self.lazy_bp_to_world or not self.lazy_bp_to_world.valid then
-			return
-		end
-		self.bp_to_world = self.lazy_bp_to_world.get() --[[@as table<uint, LuaEntity>]]
-	end
-	return self.bp_to_world
-end
-
-function BlueprintInfo:get_world_to_bp()
-	if not self.world_to_bp then
-		local bp_to_world = self:get_bp_to_world()
-		if not bp_to_world then return end
-		self.world_to_bp = {}
-		for i, entity in pairs(bp_to_world) do
-			local unum = entity.unit_number
-			if unum then self.world_to_bp[unum] = i end
-		end
-	end
-	return self.world_to_bp
-end
-
----@param bp_entity_index uint
----@param tags Tags
-function BlueprintInfo:apply_tags(bp_entity_index, tags)
-	local actual = self:get_actual()
-	if not actual then return end
-	local old_tags = actual.get_blueprint_entity_tags(bp_entity_index)
-	if not old_tags or (table_size(old_tags) == 0) then
-		actual.set_blueprint_entity_tags(bp_entity_index, tags)
-	else
-		for k, v in pairs(tags) do
-			old_tags[k] = v
-		end
-		actual.set_blueprint_entity_tags(bp_entity_index, old_tags)
-	end
-end
-
----@param bp_entity_index integer
----@param key string
----@param value AnyBasic
-function BlueprintInfo:apply_tag(bp_entity_index, key, value)
-	local actual = self:get_actual()
-	if not actual then return end
-	actual.set_blueprint_entity_tag(bp_entity_index, key, value)
-end
-
----@param bp_entities BlueprintEntity[]
-function BlueprintInfo:set_entities(bp_entities)
-	local actual = self:get_actual()
-	if not actual then return end
-	actual.set_blueprint_entities(bp_entities)
-	self.entities = nil
-	self.bpspace_bbox = nil
-	self.bp_to_world_pos = nil
-end
-
-function BlueprintInfo:get_bpspace_bbox()
+---Get the bounding box of the blueprint in blueprint coordinate space.
+function BlueprintBase:get_bpspace_bbox()
 	if not self.bpspace_bbox then
 		local bp_entities = self:get_entities()
 		if not bp_entities or #bp_entities == 0 then return end
@@ -191,10 +96,122 @@ function BlueprintInfo:get_bpspace_bbox()
 	return self.bpspace_bbox
 end
 
----For a blueprint being built, get a map from the blueprint entity indices to
+--------------------------------------------------------------------------------
+-- BLUEPRINTSETUP
+-- Interface to a blueprint being setup by the `on_player_setup_blueprint`
+-- event.
+--------------------------------------------------------------------------------
+
+---Temporary object that should be created during `on_player_setup_blueprint`.
+---This object can be used to manipulate the blueprint being setup, and should
+---be discarded after the event.
+---@class bplib.BlueprintSetup: bplib.BlueprintBase
+---@field private lazy_bp_to_world? LuaLazyLoadedValue<{[int]: LuaEntity}>
+---@field private bp_to_world? {[int]: LuaEntity}
+local BlueprintSetup = setmetatable({}, BlueprintBase)
+BlueprintSetup.__index = BlueprintSetup
+lib.BlueprintSetup = BlueprintSetup
+
+---Create a `BlueprintSetup` corresponding to an `on_player_setup_blueprint`
+---Factorio event. This `BlueprintSetup` can be used to map tags from world
+---entities into the pickled blueprint entities.
+---@param setup_event EventData.on_player_setup_blueprint
+function BlueprintSetup:new(setup_event)
+	local player = game.get_player(setup_event.player_index)
+	if not player then return nil end
+	local obj = setmetatable({
+		record = setup_event.record,
+		stack = setup_event.stack,
+		player = player,
+		lazy_bp_to_world = setup_event.mapping,
+	}, self)
+
+	return obj
+end
+
+---Retrieve a map from blueprint entity indices to the real-world entities
+---that are being blueprinted.
+function BlueprintSetup:map_blueprint_indices_to_world_entities()
+	if not self.bp_to_world then
+		if not self.lazy_bp_to_world or not self.lazy_bp_to_world.valid then
+			return
+		end
+		self.bp_to_world = self.lazy_bp_to_world.get() --[[@as table<uint, LuaEntity>]]
+	end
+	return self.bp_to_world
+end
+
+---Apply a table of tags to a blueprint entity. Applied tags will overwrite
+---pre-existing tags with the same key.
+---@param bp_entity_index uint
+---@param tags Tags
+function BlueprintSetup:apply_tags(bp_entity_index, tags)
+	local actual = self:get_actual()
+	if not actual then return end
+	local old_tags = actual.get_blueprint_entity_tags(bp_entity_index)
+	if not old_tags or (table_size(old_tags) == 0) then
+		actual.set_blueprint_entity_tags(bp_entity_index, tags)
+	else
+		for k, v in pairs(tags) do
+			old_tags[k] = v
+		end
+		actual.set_blueprint_entity_tags(bp_entity_index, old_tags)
+	end
+end
+
+---Apply a single tag to a blueprint entity.
+---@param bp_entity_index integer
+---@param key string
+---@param value AnyBasic
+function BlueprintSetup:apply_tag(bp_entity_index, key, value)
+	local actual = self:get_actual()
+	if not actual then return end
+	actual.set_blueprint_entity_tag(bp_entity_index, key, value)
+end
+
+--------------------------------------------------------------------------------
+-- BLUEPRINTBUILD
+-- Interface to a blueprint being built by the `on_pre_build` event.
+--------------------------------------------------------------------------------
+
+---Temporary object that should be created during the `on_pre_build` event.
+---If a blueprint is being built, this object will allow you to manipulate
+---it in some useful ways. The object should be discarded after the event.
+---@class bplib.BlueprintBuild: bplib.BlueprintBase
+---@field public surface LuaSurface The surface where the blueprint is being placed.
+---@field public position MapPosition The worldspace position where the blueprint is being placed.
+---@field public direction defines.direction The rotation of the blueprint expressed as a Factorio direction.
+---@field public flip_horizontal? boolean Whether the blueprint is flipped horizontally.
+---@field public flip_vertical? boolean Whether the blueprint is flipped vertically.
+---@field private bp_to_world_pos? {[int]: MapPosition}
+local BlueprintBuild = setmetatable({}, BlueprintBase)
+BlueprintBuild.__index = BlueprintBuild
+lib.BlueprintBuild = BlueprintBuild
+
+---Create a `BlueprintBuild` corresponding to an `on_pre_build` Factorio
+---event. Returns `nil` if the player is not building a blueprint.
+---@param pre_build_event EventData.on_pre_build
+function BlueprintBuild:new(pre_build_event)
+	local player = game.get_player(pre_build_event.player_index)
+	if not player or not player.is_cursor_blueprint() then return nil end
+	local obj = setmetatable({
+		record = player.cursor_record,
+		stack = player.cursor_stack,
+		player = player,
+		surface = player.surface,
+		position = pre_build_event.position,
+		direction = pre_build_event.direction,
+		flip_horizontal = pre_build_event.flip_horizontal,
+		flip_vertical = pre_build_event.flip_vertical,
+	}, self)
+
+	return obj
+end
+
+---Get a map from blueprint entity indices to
 ---the positions in worldspace of where those entities will be when the
 ---blueprint is built.
-function BlueprintInfo:get_bp_to_world_pos()
+function BlueprintBuild:map_blueprint_indices_to_world_positions()
 	if self.bp_to_world_pos then return self.bp_to_world_pos end
 	local bbox = self:get_bpspace_bbox()
 	if not bbox then return end
@@ -223,8 +240,10 @@ end
 ---is placed.
 ---@param entity_filter? fun(bp_entity: BlueprintEntity): boolean? Optional filter function to apply to the blueprint entities before checking for overlap.
 ---@return {[int]: LuaEntity}? overlap The overlapping entities indexed by the blueprint entity index that will overlap it.
-function BlueprintInfo:get_overlap(entity_filter)
-	local bpwp = self:get_bp_to_world_pos()
+function BlueprintBuild:map_blueprint_indices_to_overlapping_entities(
+	entity_filter
+)
+	local bpwp = self:map_blueprint_indices_to_world_positions()
 	if not bpwp then return end
 	local bp_entities = self:get_entities() --[[@as BlueprintEntity[] ]]
 	local surface = self.surface --[[@as LuaSurface]]

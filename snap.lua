@@ -192,27 +192,6 @@ function lib.get_bp_relative_snapping(
 	xsnap, xofs = compute_single_axis_snap_type(w, snap_target_parity[1], spos[1])
 	ysnap, yofs = compute_single_axis_snap_type(h, snap_target_parity[2], spos[2])
 
-	game.print({
-		"",
-		"snap entity: ",
-		snap_entity.name,
-		" bbox: ",
-		w,
-		"x",
-		h,
-		" entity snap parity: ",
-		snap_target_parity[1],
-		" ",
-		snap_target_parity[2],
-		" spos: ",
-		spos[1],
-		",",
-		spos[2],
-		" final snap parities: ",
-		SnapType[xsnap],
-		" ",
-		SnapType[ysnap],
-	}, { skip = defines.print_skip.never, sound = defines.print_sound.never })
 	return xsnap, ysnap, xofs, yofs
 end
 
