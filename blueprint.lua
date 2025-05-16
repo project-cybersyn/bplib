@@ -141,6 +141,16 @@ function BlueprintSetup:map_blueprint_indices_to_world_entities()
 	return self.bp_to_world
 end
 
+---Set a table of tags on a blueprint entity. This will overwrite any
+---pre-existing tags. Passing `nil` will remove all tags.
+---@param bp_entity_index uint
+---@param tags Tags|nil
+function BlueprintSetup:set_tags(bp_entity_index, tags)
+	local actual = self:get_actual()
+	if not actual then return end
+	actual.set_blueprint_entity_tags(bp_entity_index, tags or {})
+end
+
 ---Apply a table of tags to a blueprint entity. Applied tags will overwrite
 ---pre-existing tags with the same key.
 ---@param bp_entity_index uint
