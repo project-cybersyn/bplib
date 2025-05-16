@@ -5,7 +5,9 @@
 if ... ~= "__bplib__.blueprint" then return require("__bplib__.blueprint") end
 
 local mlib = require("__bplib__.math")
+local types = require("__bplib__.types")
 
+local SnapType = types.SnapType
 local floor = math.floor
 local pos_get = mlib.pos_get
 local pos_set = mlib.pos_set
@@ -26,9 +28,6 @@ local bbox_union = mlib.bbox_union
 local ZEROES = { 0, 0 }
 
 local lib = {}
-
----A blueprint-like object
----@alias bplib.Blueprintish LuaItemStack|LuaRecord
 
 ---Given either a record or a stack, which might be a blueprint or a blueprint book,
 ---return the actual blueprint involved, stripped of any containing books.
@@ -65,64 +64,35 @@ lib.get_actual_blueprint = get_actual_blueprint
 -- information for most entities where they are reliable.
 --------------------------------------------------------------------------------
 
----Possible types of cursor snapping during relative blueprint placement.
----@enum bplib.SnapType
-local SnapType = {
-	"GRID_POINT",
-	"TILE",
-	"EVEN_GRID_POINT",
-	"EVEN_TILE",
-	"ODD_GRID_POINT",
-	"ODD_TILE",
-	GRID_POINT = 1,
-	TILE = 2,
-	EVEN_GRID_POINT = 3,
-	EVEN_TILE = 4,
-	ODD_GRID_POINT = 5,
-	ODD_TILE = 6,
-}
-
----Empirical data for a single direction of a single rail type. Entries are:
----[1] = Left offset from rail position to rail bbox edge.
----[2] = Top offset from rail position to rail bbox edge.
----[3] = Right offset from rail position to rail bbox edge.
----[4] = Bottom offset from rail position to rail bbox edge.
----[5] = Required parity of X coord of position of rail on world grid. (1=odd, 2=even)
----[6] = Required parity of Y coord of position of rail on world grid. (1=odd, 2=even)
----@alias bplib.SnapData { [1]: int, [2]: int, [3]: int, [4]: int, [5]: int, [6]: int }
-
----Rail data associated with each valid direction of a given rail type
----@alias bplib.SnapDataPerDirection {[uint]: bplib.SnapData}
-
 ---Treat curved-rail-a as 2x4 centered on its position. See:
 ---https://forums.factorio.com/viewtopic.php?p=613478#p613478
----@type bplib.SnapDataPerDirection
+---@type bplib.DirectionalSnapData
 local curved_rail_a_table = {
 	[0] = { -1, -2, 1, 2, 1, 2 },
-	[2] = { -1, -3, 2, 2, 1, 2 },
-	[4] = { -2, -2, 3, 1, 2, 1 },
-	[6] = { -2, -1, 3, 2, 2, 1 },
-	[8] = { -1, -2, 2, 3, 1, 2 },
-	[10] = { -2, -2, 1, 3, 1, 2 },
-	[12] = { -3, -1, 2, 2, 2, 1 },
-	[14] = { -3, -2, 2, 1, 2, 1 },
+	[2] = { -1, -2, 1, 2, 1, 2 },
+	[4] = { -2, -1, 2, 1, 2, 1 },
+	[6] = { -2, -1, 2, 1, 2, 1 },
+	[8] = { -1, -2, 1, 2, 1, 2 },
+	[10] = { -1, -2, 1, 2, 1, 2 },
+	[12] = { -2, -1, 2, 1, 2, 1 },
+	[14] = { -2, -1, 2, 1, 2, 1 },
 }
 
 ---Treat curved-rail-b as a 4x4 centered on its position.
 ---This is from empirical observation in-game.
----@type bplib.SnapDataPerDirection
+---@type bplib.DirectionalSnapData
 local curved_rail_b_table = {
 	[0] = { -2, -2, 2, 2, 1, 1 },
-	[2] = { -2, -3, 3, 3, 1, 1 },
-	[4] = { -3, -3, 3, 2, 1, 1 },
-	[6] = { -3, -2, 3, 3, 1, 1 },
-	[8] = { -2, -3, 3, 3, 1, 1 },
-	[10] = { -3, -3, 2, 3, 1, 1 },
-	[12] = { -3, -2, 3, 3, 1, 1 },
-	[14] = { -3, -3, 3, 2, 1, 1 },
+	[2] = { -2, -2, 2, 2, 1, 1 },
+	[4] = { -2, -2, 2, 2, 1, 1 },
+	[6] = { -2, -2, 2, 2, 1, 1 },
+	[8] = { -2, -2, 2, 2, 1, 1 },
+	[10] = { -2, -2, 2, 2, 1, 1 },
+	[12] = { -2, -2, 2, 2, 1, 1 },
+	[14] = { -2, -2, 2, 2, 1, 1 },
 }
 
----@type bplib.SnapDataPerDirection
+---@type bplib.DirectionalSnapData
 local straight_rail_table = {
 	[0] = { -1, -1, 1, 1, 1, 1 },
 	[2] = { -2, -2, 2, 2, 2, 2 },
@@ -134,7 +104,7 @@ local straight_rail_table = {
 	[14] = { -2, -2, 2, 2, 2, 2 },
 }
 
----@type bplib.SnapDataPerDirection
+---@type bplib.DirectionalSnapData
 local half_diagonal_rail_table = {
 	[0] = { -2, -2, 2, 2, 1, 1 },
 	[2] = { -2, -2, 2, 2, 1, 1 },
@@ -146,7 +116,7 @@ local half_diagonal_rail_table = {
 	[14] = { -2, -2, 2, 2, 1, 1 },
 }
 
----@type bplib.SnapDataPerDirection
+---@type bplib.DirectionalSnapData
 local train_stop_table = {
 	[0] = { -1, -1, 1, 1, 1, 1 },
 	[4] = { -1, -1, 1, 1, 1, 1 },
@@ -156,7 +126,7 @@ local train_stop_table = {
 
 ---Use an empirical lookup table to generate bounding boxes for particular
 ---known entity types.
----@param table bplib.SnapDataPerDirection
+---@param table bplib.DirectionalSnapData
 ---@return fun(bp_entity: BlueprintEntity, eproto: LuaEntityPrototype): BoundingBox
 local function table_bbox_getter(table)
 	---@param bp_entity BlueprintEntity
@@ -340,11 +310,17 @@ end
 ---@param bbox BoundingBox Transformed bpspace bbox.
 ---@param snap_entity BlueprintEntity? Entity governing snapping, if any
 ---@param snap_entity_pos MapPosition? Transformed bpspace position of the snap entity.
+---@param bp_rot_n int? Rotation of the blueprint in 90 degree increments.
 ---@return bplib.SnapType xsnap Snapping type for the X-axis.
 ---@return bplib.SnapType ysnap Snapping type for the Y-axis.
 ---@return int xofs Offset to apply to the X-axis.
 ---@return int yofs Offset to apply to the Y-axis.
-local function get_bp_relative_snapping(bbox, snap_entity, snap_entity_pos)
+local function get_bp_relative_snapping(
+	bbox,
+	snap_entity,
+	snap_entity_pos,
+	bp_rot_n
+)
 	local l, t, r, b = bbox_get(bbox)
 	local w, h = r - l, b - t
 	local xsnap, ysnap = SnapType.GRID_POINT, SnapType.GRID_POINT
@@ -362,6 +338,11 @@ local function get_bp_relative_snapping(bbox, snap_entity, snap_entity_pos)
 	local snap_table =
 		snappable_types[snap_entity_type][snap_entity.direction or 0]
 	local snap_target_parity = { snap_table[5], snap_table[6] }
+	if bp_rot_n % 2 == 1 then
+		-- Swap x and y parities if the blueprint is rotated.
+		snap_target_parity[1], snap_target_parity[2] =
+			snap_target_parity[2], snap_target_parity[1]
+	end
 
 	-- Compute number of half integer steps from origin to controlling snap
 	-- entity pos.
@@ -379,6 +360,10 @@ local function get_bp_relative_snapping(bbox, snap_entity, snap_entity_pos)
 		"",
 		"snap entity: ",
 		snap_entity.name,
+		" bbox: ",
+		w,
+		"x",
+		h,
 		" entity snap parity: ",
 		snap_target_parity[1],
 		" ",
@@ -562,8 +547,12 @@ local function get_bp_world_positions(
 				flip_horizontal,
 				flip_vertical
 			)
-			xst, yst, xso, yso =
-				get_bp_relative_snapping(placement_bbox, snap_entity, snap_entity_pos)
+			xst, yst, xso, yso = get_bp_relative_snapping(
+				placement_bbox,
+				snap_entity,
+				snap_entity_pos,
+				bp_rot_n
+			)
 		else
 			-- Compute relative snapping based on bbox dimensions only (1x1 snapping)
 			xst, yst, xso, yso = get_bp_relative_snapping(placement_bbox, nil)
