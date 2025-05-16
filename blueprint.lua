@@ -6,6 +6,8 @@ if ... ~= "__bplib__.blueprint" then return require("__bplib__.blueprint") end
 
 local mlib = require("__bplib__.math")
 local types = require("__bplib__.types")
+local bbox_lib = require("__bplib__.bbox")
+local internal = require("__bplib__.internal")
 
 local SnapType = types.SnapType
 local floor = math.floor
@@ -24,6 +26,8 @@ local pos_set_center = mlib.pos_set_center
 local bbox_flip_horiz = mlib.bbox_flip_horiz
 local bbox_flip_vert = mlib.bbox_flip_vert
 local bbox_union = mlib.bbox_union
+local get_blueprint_bbox = bbox_lib.get_blueprint_bbox
+local get_snap_data_for_direction = internal.get_snap_data_for_direction
 
 local ZEROES = { 0, 0 }
 
@@ -64,133 +68,6 @@ lib.get_actual_blueprint = get_actual_blueprint
 -- information for most entities where they are reliable.
 --------------------------------------------------------------------------------
 
----Treat curved-rail-a as 2x4 centered on its position. See:
----https://forums.factorio.com/viewtopic.php?p=613478#p613478
----@type bplib.DirectionalSnapData
-local curved_rail_a_table = {
-	[0] = { -1, -2, 1, 2, 1, 2 },
-	[2] = { -1, -2, 1, 2, 1, 2 },
-	[4] = { -2, -1, 2, 1, 2, 1 },
-	[6] = { -2, -1, 2, 1, 2, 1 },
-	[8] = { -1, -2, 1, 2, 1, 2 },
-	[10] = { -1, -2, 1, 2, 1, 2 },
-	[12] = { -2, -1, 2, 1, 2, 1 },
-	[14] = { -2, -1, 2, 1, 2, 1 },
-}
-
----Treat curved-rail-b as a 4x4 centered on its position.
----This is from empirical observation in-game.
----@type bplib.DirectionalSnapData
-local curved_rail_b_table = {
-	[0] = { -2, -2, 2, 2, 1, 1 },
-	[2] = { -2, -2, 2, 2, 1, 1 },
-	[4] = { -2, -2, 2, 2, 1, 1 },
-	[6] = { -2, -2, 2, 2, 1, 1 },
-	[8] = { -2, -2, 2, 2, 1, 1 },
-	[10] = { -2, -2, 2, 2, 1, 1 },
-	[12] = { -2, -2, 2, 2, 1, 1 },
-	[14] = { -2, -2, 2, 2, 1, 1 },
-}
-
----@type bplib.DirectionalSnapData
-local straight_rail_table = {
-	[0] = { -1, -1, 1, 1, 1, 1 },
-	[2] = { -2, -2, 2, 2, 2, 2 },
-	[4] = { -1, -1, 1, 1, 1, 1 },
-	[6] = { -2, -2, 2, 2, 2, 2 },
-	[8] = { -1, -1, 1, 1, 1, 1 },
-	[10] = { -2, -2, 2, 2, 2, 2 },
-	[12] = { -1, -1, 1, 1, 1, 1 },
-	[14] = { -2, -2, 2, 2, 2, 2 },
-}
-
----@type bplib.DirectionalSnapData
-local half_diagonal_rail_table = {
-	[0] = { -2, -2, 2, 2, 1, 1 },
-	[2] = { -2, -2, 2, 2, 1, 1 },
-	[4] = { -2, -2, 2, 2, 1, 1 },
-	[6] = { -2, -2, 2, 2, 1, 1 },
-	[8] = { -2, -2, 2, 2, 1, 1 },
-	[10] = { -2, -2, 2, 2, 1, 1 },
-	[12] = { -2, -2, 2, 2, 1, 1 },
-	[14] = { -2, -2, 2, 2, 1, 1 },
-}
-
----@type bplib.DirectionalSnapData
-local train_stop_table = {
-	[0] = { -1, -1, 1, 1, 1, 1 },
-	[4] = { -1, -1, 1, 1, 1, 1 },
-	[8] = { -1, -1, 1, 1, 1, 1 },
-	[12] = { -1, -1, 1, 1, 1, 1 },
-}
-
----Use an empirical lookup table to generate bounding boxes for particular
----known entity types.
----@param table bplib.DirectionalSnapData
----@return fun(bp_entity: BlueprintEntity, eproto: LuaEntityPrototype): BoundingBox
-local function table_bbox_getter(table)
-	---@param bp_entity BlueprintEntity
-	return function(bp_entity)
-		local dir = bp_entity.direction or 0
-		local x, y = pos_get(bp_entity.position)
-		local adjustments = table[dir]
-		if not adjustments then adjustments = { 0, 0, 0, 0 } end
-		return {
-			{ x + adjustments[1], y + adjustments[2] },
-			{ x + adjustments[3], y + adjustments[4] },
-		}
-	end
-end
-
----Generically compute the bounding box of a blueprint entity in blueprint space.
----Works for all entities that obey the factorio docs.
----@param bp_entity BlueprintEntity
----@param eproto LuaEntityPrototype
-local function default_bbox(bp_entity, eproto)
-	local ebox = bbox_new(eproto.collision_box)
-	local dir = bp_entity.direction or 0
-	bbox_rotate_ortho(ebox, ZEROES, floor(dir / 4))
-	bbox_translate(ebox, 1, bp_entity.position)
-	return ebox
-end
-
-local empirical_bbox_types = {
-	["curved-rail-a"] = table_bbox_getter(curved_rail_a_table),
-	["curved-rail-b"] = table_bbox_getter(curved_rail_b_table),
-	["straight-rail"] = table_bbox_getter(straight_rail_table),
-	["half-diagonal-rail"] = table_bbox_getter(half_diagonal_rail_table),
-	["elevated-half-diagonal-rail"] = table_bbox_getter(half_diagonal_rail_table),
-	["elevated-straight-rail"] = table_bbox_getter(straight_rail_table),
-	["elevated-curved-rail-a"] = table_bbox_getter(curved_rail_a_table),
-	["elevated-curved-rail-b"] = table_bbox_getter(curved_rail_b_table),
-	["train-stop"] = table_bbox_getter(train_stop_table),
-}
-
-local snappable_types = {
-	["straight-rail"] = straight_rail_table,
-	["half-diagonal-rail"] = half_diagonal_rail_table,
-	["curved-rail-a"] = curved_rail_a_table,
-	["curved-rail-b"] = curved_rail_b_table,
-	["elevated-straight-rail"] = straight_rail_table,
-	["elevated-half-diagonal-rail"] = half_diagonal_rail_table,
-	["elevated-curved-rail-a"] = curved_rail_a_table,
-	["elevated-curved-rail-b"] = curved_rail_b_table,
-	["train-stop"] = train_stop_table,
-}
-
----Get the bounding box of a single blueprint entity in blueprint space.
----@param bp_entity BlueprintEntity
----@param eproto LuaEntityPrototype
----@return BoundingBox
-local function get_bp_entity_bbox(bp_entity, eproto)
-	local bbox_getter = empirical_bbox_types[eproto.type]
-	if bbox_getter then
-		return bbox_getter(bp_entity, eproto)
-	else
-		return default_bbox(bp_entity, eproto)
-	end
-end
-
 ---Transform a single entity's position in blueprint space based on rotation
 ---and flip parameters of the blueprint placement operation.
 ---@param bp_entity BlueprintEntity
@@ -217,42 +94,6 @@ local function get_bp_entity_transformed_pos(
 	-- Apply blueprint rotation
 	pos_rotate_ortho(epos, ZEROES, -bp_rot_n)
 	return epos
-end
-
----Get the net bounding box of an entire set of BP entities. Also locates an
----entity within the blueprint that will cause implied snapping for relative
----placement, if any.
----@param bp_entities BlueprintEntity[] A *nonempty* set of blueprint entities.
----@param bounding_boxes? BoundingBox[] If provided, will be filled with the bounding boxes of each entity by index.
----@return BoundingBox bbox The bounding box of the blueprint in blueprint space
----@return uint? snap_index The index of the entity that causes implied snapping, if any.
-local function get_bp_bbox(bp_entities, bounding_boxes)
-	local snap_index = nil
-
-	local e1x, e1y = pos_get(bp_entities[1].position)
-	---@type BoundingBox
-	local bpspace_bbox = { { e1x, e1y }, { e1x, e1y } }
-
-	for i = 1, #bp_entities do
-		local bp_entity = bp_entities[i]
-		local eproto = prototypes.entity[bp_entity.name]
-		local eproto_type = eproto.type
-
-		-- Detect entities which cause implied snapping of the blueprint.
-		if snap_index == nil then
-			local snap_info = snappable_types[eproto_type]
-			if snap_info then snap_index = i end
-		end
-
-		-- Get bbox for entity and union it with existing bbox.
-		local ebox = get_bp_entity_bbox(bp_entity, eproto)
-		if bounding_boxes then bounding_boxes[i] = ebox end
-		bbox_union(bpspace_bbox, ebox)
-	end
-
-	bbox_round(bpspace_bbox)
-
-	return bpspace_bbox, snap_index
 end
 
 ---@param length uint
@@ -334,9 +175,11 @@ local function get_bp_relative_snapping(
 
 	-- Find snap entity
 	local proto = prototypes.entity[snap_entity.name]
-	local snap_entity_type = proto.type
-	local snap_table =
-		snappable_types[snap_entity_type][snap_entity.direction or 0]
+	local snap_table = get_snap_data_for_direction(snap_entity, proto)
+	if not snap_table then
+		-- XXX: this should never happen
+		return xsnap, ysnap, xofs, yofs
+	end
 	local snap_target_parity = { snap_table[5], snap_table[6] }
 	if bp_rot_n % 2 == 1 then
 		-- Swap x and y parities if the blueprint is rotated.
@@ -807,7 +650,7 @@ function BlueprintInfo:get_bpspace_bbox()
 
 		local bboxes = {} -- XXX
 		self.bp_to_bbox = bboxes
-		local bbox, snap_index = get_bp_bbox(bp_entities, bboxes)
+		local bbox, snap_index = get_blueprint_bbox(bp_entities, bboxes)
 		self.bpspace_bbox = bbox
 		self.snap_index = snap_index
 	end
