@@ -1,5 +1,8 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.0
+Version: 1.0.0
 Date: 2025-05-15
   Features:
     - Initial release
+    - `__bplib__.blueprint.get_actual_blueprint` function added
+    - `__bplib__.blueprint.BlueprintSetup` class added
+    - `__bplib__.blueprint.BlueprintBuild` class added
