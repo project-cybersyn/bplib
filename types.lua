@@ -25,4 +25,15 @@ local lib = {}
 ---Snap data associated with a collection of entity names or type names.
 ---@alias bplib.EntityDirectionalSnapData {[string]: bplib.DirectionalSnapData}
 
+---Info needed to place a blueprint correctly in the world.
+---@class bplib.BlueprintPlacementInfo
+---@field public surface? LuaSurface The surface where the blueprint is being placed.
+---@field public position? MapPosition The worldspace position where the blueprint is being placed.
+---@field public direction? defines.direction The rotation of the blueprint expressed as a Factorio direction.
+---@field public flip_horizontal? boolean Whether the blueprint is flipped horizontally.
+---@field public flip_vertical? boolean Whether the blueprint is flipped vertically.
+---@field public snap? TilePosition Blueprint snapping grid size
+---@field public snap_offset? TilePosition Blueprint snapping grid offset
+---@field public snap_absolute? boolean Whether blueprint snapping is absolute or relative
+
 return lib

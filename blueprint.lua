@@ -44,7 +44,7 @@ lib.get_actual_blueprint = get_actual_blueprint
 
 ---Class for end-to-end manipulation of blueprints. Lazily caches information
 ---about the blueprint and its entities as necessary.
----@class bplib.BlueprintInfo
+---@class bplib.BlueprintInfo: bplib.BlueprintPlacementInfo
 ---@field public record? LuaRecord The base record being manipulated if any
 ---@field public stack? LuaItemStack The base item stack being manipulated if any
 ---@field public player LuaPlayer The player who is manipulating the blueprint.
@@ -53,18 +53,10 @@ lib.get_actual_blueprint = get_actual_blueprint
 ---@field public lazy_bp_to_world? LuaLazyLoadedValue<{[int]: LuaEntity}> A lazy mapping of the blueprint entities to the entities in the world.
 ---@field public bp_to_world? {[int]: LuaEntity} A mapping of the blueprint entity indices to the entities in the world.
 ---@field public world_to_bp? {[UnitNumber]: int} A mapping from world entity unit numbers to blueprint entity indices.
----@field public surface? LuaSurface The surface where the blueprint is being placed.
----@field public position? MapPosition The worldspace position where the blueprint is being placed.
----@field public direction? defines.direction The rotation of the blueprint expressed as a Factorio direction.
----@field public flip_horizontal? boolean Whether the blueprint is flipped horizontally.
----@field public flip_vertical? boolean Whether the blueprint is flipped vertically.
 ---@field public bpspace_bbox? BoundingBox The bounding box of the blueprint in blueprint space.
 ---@field public bp_to_bbox? {[int]: BoundingBox} A mapping of the blueprint entity indices to the bounding rects of the entities in blueprint space.
 ---@field public bp_to_world_pos? {[int]: MapPosition} A mapping of the blueprint entity indices to positions in worldspace of where those entities will be when the blueprint is built.
----@field public snap? TilePosition Blueprint snapping grid size
----@field public snap_offset? TilePosition Blueprint snapping grid offset
----@field public snap_absolute? boolean Whether blueprint snapping is absolute or relative
----@field public debug? boolean Whether to draw debug graphics for the blueprint placement.
+---@field public debug? boolean Whether to draw debug graphics using `LuaRendering`
 local BlueprintInfo = {}
 BlueprintInfo.__index = BlueprintInfo
 lib.BlueprintInfo = BlueprintInfo
