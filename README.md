@@ -14,22 +14,12 @@ Its primary purpose is to address the following pain points for developers worki
 
 ## Contributing
 
-Please use the [GitHub repository](https://github.com/project-cybersyn/bplib) for
-questions, bug reports, or pull requests.
+Please use the [GitHub repository](https://github.com/project-cybersyn/bplib) for questions, bug reports, or pull requests.
 
 ## Usage
 
 [**Read the example code here!**](https://github.com/project-cybersyn/bplib/blob/main/doc/example.lua)
 
-Download the latest release from the
-[mod portal](https://mods.factorio.com/mod/bplib) unzip it, and put it in your
-mods directory. You can import the primary API of bplib by using `require("__bplib__.blueprint")`.
+Download the latest release from the [mod portal](https://mods.factorio.com/mod/bplib) unzip it, and put it in your mods directory. You can import the primary API of bplib by using `require("__bplib__.blueprint")`.
 
-bplib is self-documenting, via LuaLS type annotations and comments. We recommend installing the [Factorio modding
-toolkit](https://github.com/justarandomgeek/vscode-factoriomod-debug) and
-setting it up with the [Sumneko Lua language
-server](https://github.com/sumneko/lua-language-server). Adding bplib to the LuaLS library list will give you code completion and in-editor documentation.
-
-
-
-
+bplib is self-documenting, via LuaLS type annotations and comments. We recommend installing the [Factorio modding toolkit](https://github.com/justarandomgeek/vscode-factoriomod-debug) and [LuaLS](https://github.com/sumneko/lua-language-server). Adding bplib to the LuaLS library list will give you code completion and in-editor documentation.
