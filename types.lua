@@ -25,4 +25,12 @@ local lib = {}
 ---Snap data associated with a collection of entity names or type names.
 ---@alias bplib.EntityDirectionalSnapData {[string]: bplib.DirectionalSnapData}
 
+---@class (exact) bplib.Error
+---@field message string
+
+---@class bplib.CustomEventBase
+---@field name string The name of the event.
+---@field tick uint The tick the event was raised.
+---@field bplib_event_id uint? The ID of the event in bplib's event system, if applicable.
+
 return lib
