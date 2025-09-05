@@ -1,14 +1,13 @@
 --------------------------------------------------------------------------------
--- SINGLE-ENTITY BBOXES
+-- BLUEPRINT BOUNDING BOXES
 --
--- The factorio documentation for computing bounding boxes is basically
--- completely false for rails, particularly curved rails. The following code
--- is an attempt to empirically reverse engineer the behavior of rails wrt
--- bounding boxes and snapping, while falling back on factorio api
--- information for most entities where they are reliable.
+-- This internal code is used to compute bounding boxes for blueprint entities
+-- and entire blueprints. Unfortunately, this is not straightforward due in
+-- large part to the factorio API providing fake/incorrect information for
+-- bounding boxes of certain entities. (Curved rails being the main culprit.)
 --------------------------------------------------------------------------------
 
-if ... ~= "__bplib__.bbox" then return require("__bplib__.bbox") end
+if ... ~= "__bplib__.lib.bbox" then return require("__bplib__.lib.bbox") end
 local lib = {}
 
 local mlib = require("__bplib__.api.math")
