@@ -5,10 +5,10 @@
 if ... ~= "__bplib__.internal" then return require("__bplib__.internal") end
 local lib = {}
 
----@type bplib.EntityDirectionalSnapData
+---@type bplib.internal.EntityDirectionalSnapData
 local internal_custom_entity_types = nil
 
----@type bplib.EntityDirectionalSnapData
+---@type bplib.internal.EntityDirectionalSnapData
 local internal_custom_entity_names = nil
 
 local function get_custom_snap_types()
@@ -26,7 +26,7 @@ local function get_custom_snap_names()
 end
 
 ---@param eproto LuaEntityPrototype
----@return bplib.DirectionalSnapData|nil
+---@return bplib.internal.DirectionalSnapData|nil
 local function get_custom_snap_info(eproto)
 	local name_info = get_custom_snap_names()[eproto.name]
 	if name_info then return name_info end
@@ -37,7 +37,7 @@ end
 
 ---@param bp_entity BlueprintEntity
 ---@param eproto LuaEntityPrototype
----@return bplib.SnapData|nil
+---@return bplib.internal.SnapData|nil
 function lib.get_snap_data_for_direction(bp_entity, eproto)
 	local snap_data = get_custom_snap_info(eproto)
 	if not snap_data then return nil end

@@ -39,7 +39,7 @@ end
 
 ---Compute bbox of a blueprint entity using custom snap data.
 ---@param bp_entity BlueprintEntity
----@param snap bplib.SnapData
+---@param snap bplib.internal.SnapData
 local function custom_bbox(bp_entity, snap)
 	local x, y = pos_get(bp_entity.position)
 	return {

@@ -6,7 +6,7 @@
 -- their own entities here by using the remote interface.
 --------------------------------------------------------------------------------
 
----@type bplib.DirectionalSnapData
+---@type bplib.internal.DirectionalSnapData
 local straight_rail_table = {
 	[0] = { -1, -1, 1, 1, 1, 1 },
 	[2] = { -2, -2, 2, 2, 2, 2 },
@@ -20,7 +20,7 @@ local straight_rail_table = {
 
 ---Treat curved-rail-a as 2x4 centered on its position. See:
 ---https://forums.factorio.com/viewtopic.php?p=613478#p613478
----@type bplib.DirectionalSnapData
+---@type bplib.internal.DirectionalSnapData
 local curved_rail_a_table = {
 	[0] = { -1, -2, 1, 2, 1, 2 },
 	[2] = { -1, -2, 1, 2, 1, 2 },
@@ -34,7 +34,7 @@ local curved_rail_a_table = {
 
 ---Treat curved-rail-b as a 4x4 centered on its position.
 ---This is from empirical observation in-game.
----@type bplib.DirectionalSnapData
+---@type bplib.internal.DirectionalSnapData
 local curved_rail_b_table = {
 	[0] = { -2, -2, 2, 2, 1, 1 },
 	[2] = { -2, -2, 2, 2, 1, 1 },
@@ -46,7 +46,7 @@ local curved_rail_b_table = {
 	[14] = { -2, -2, 2, 2, 1, 1 },
 }
 
----@type bplib.DirectionalSnapData
+---@type bplib.internal.DirectionalSnapData
 local half_diagonal_rail_table = {
 	[0] = { -2, -2, 2, 2, 1, 1 },
 	[2] = { -2, -2, 2, 2, 1, 1 },
@@ -58,7 +58,7 @@ local half_diagonal_rail_table = {
 	[14] = { -2, -2, 2, 2, 1, 1 },
 }
 
----@type bplib.EntityDirectionalSnapData
+---@type bplib.internal.EntityDirectionalSnapData
 local custom_entity_types = {
 	["straight-rail"] = straight_rail_table,
 	["curved-rail-a"] = curved_rail_a_table,
@@ -76,23 +76,23 @@ local custom_entity_types = {
 	},
 }
 
----@type bplib.EntityDirectionalSnapData
+---@type bplib.internal.EntityDirectionalSnapData
 local custom_entity_names = {}
 
----@return bplib.EntityDirectionalSnapData
+---@return bplib.internal.EntityDirectionalSnapData
 _G.api.get_custom_snap_types = function() return custom_entity_types end
 
----@return bplib.EntityDirectionalSnapData
+---@return bplib.internal.EntityDirectionalSnapData
 _G.api.get_custom_snap_names = function() return custom_entity_names end
 
 ---@param name string
----@param snap_data bplib.DirectionalSnapData
+---@param snap_data bplib.internal.DirectionalSnapData
 _G.api.set_custom_snap_type = function(name, snap_data)
 	custom_entity_types[name] = snap_data
 end
 
 ---@param name string
----@param snap_data bplib.DirectionalSnapData
+---@param snap_data bplib.internal.DirectionalSnapData
 _G.api.set_custom_snap_name = function(name, snap_data)
 	custom_entity_names[name] = snap_data
 end
