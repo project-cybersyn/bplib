@@ -12,7 +12,7 @@
 if ... ~= "__bplib__.snap" then return require("__bplib__.snap") end
 local lib = {}
 
-local mlib = require("__bplib__.math")
+local mlib = require("__bplib__.api.math")
 local internal = require("__bplib__.internal")
 
 local get_snap_data_for_direction = internal.get_snap_data_for_direction

@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------
--- BLUEPRINT LIBRARY
--- Primary end-user interfaces.
+-- BPLIB LEGACY API
+-- This is to be left in place for mods using the 1.1.x API.
+-- New mods should use the documented API only.
 --------------------------------------------------------------------------------
 
 if ... ~= "__bplib__.blueprint" then return require("__bplib__.blueprint") end

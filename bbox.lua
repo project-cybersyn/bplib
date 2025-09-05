@@ -11,7 +11,7 @@
 if ... ~= "__bplib__.bbox" then return require("__bplib__.bbox") end
 local lib = {}
 
-local mlib = require("__bplib__.math")
+local mlib = require("__bplib__.api.math")
 local internal = require("__bplib__.internal")
 
 local pos_get = mlib.pos_get

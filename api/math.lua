@@ -1,20 +1,18 @@
 -- Library of math, point, and box manipulation functions.
 
-if ... ~= "__bplib__.math" then return require("__bplib__.math") end
+if ... ~= "__bplib__.api.math" then return require("__bplib__.api.math") end
 
 local abs = math.abs
 local min = math.min
 local max = math.max
 local floor = math.floor
-local ceil = math.ceil
-local sin = math.sin
-local cos = math.cos
 
 local dir_N = defines.direction.north
 local dir_S = defines.direction.south
 local dir_E = defines.direction.east
 local dir_W = defines.direction.west
 
+--- Math and geometry utilities.
 local lib = {}
 
 ---Round to nearest place.

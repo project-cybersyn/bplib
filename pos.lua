@@ -6,7 +6,7 @@
 if ... ~= "__bplib__.pos" then return require("__bplib__.pos") end
 local lib = {}
 
-local mlib = require("__bplib__.math")
+local mlib = require("__bplib__.api.math")
 local snap_lib = require("__bplib__.snap")
 
 local floor = math.floor
