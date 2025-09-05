@@ -1,4 +1,4 @@
-# Blueprint Library
+# Blueprint Manipulation Library
 
 bplib is a set of tools for use by other Factorio mods that need to manipulate blueprints.
 
