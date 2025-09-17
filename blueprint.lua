@@ -24,6 +24,10 @@ local function get_actual_blueprint(player, record, stack)
 	-- Determine the actual blueprint being held is way harder than it should be.
 	-- h/t Xorimuth on factorio discord for this code
 	if record then
+		-- XXX: this is a workaround for a crash in factorio 2.0.66
+		-- Pending further investigation of the `is_preview` flag and what it
+		-- means, we will just bail out here.
+		if record.is_preview then return nil end
 		while record and record.type == "blueprint-book" do
 			record = record.contents[record.get_active_index(player)]
 		end
