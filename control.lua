@@ -35,7 +35,7 @@ local event_name_reverse_map = {
 -- Remote interface
 _G.api = {}
 
-require("events")
+require("control.events")
 require("storage")
 
 require("tags")
