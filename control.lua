@@ -14,7 +14,15 @@ local function debug_log(...)
 	local x = table.pack(...)
 	x.n = nil
 	if #x == 1 then x = x[1] end
-	log(serpent.line(x, { nocode = true }))
+	if game then
+		game.print(serpent.line(x, { nocode = true }), {
+			skip = defines.print_skip.never,
+			sound = defines.print_sound.never,
+			game_state = false,
+		})
+	else
+		log(serpent.line(x, { nocode = true }))
+	end
 end
 _G.debug_log = debug_log
 events.set_strace_handler(debug_log)
@@ -36,7 +44,7 @@ local event_name_reverse_map = {
 _G.api = {}
 
 require("control.events")
-require("storage")
+require("control.storage")
 
 require("tags")
 
