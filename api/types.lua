@@ -8,6 +8,7 @@ local lib = {}
 ---A blueprint-like object
 ---@alias bplib.Blueprintish LuaItemStack|LuaRecord
 
+---Standard error object returned from bplib remote interface calls.
 ---@class (exact) bplib.Error
 ---@field message string
 

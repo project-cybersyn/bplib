@@ -7,11 +7,13 @@
 -- bounding boxes of certain entities. (Curved rails being the main culprit.)
 --------------------------------------------------------------------------------
 
-if ... ~= "__bplib__.lib.bbox" then return require("__bplib__.lib.bbox") end
+if ... ~= "__bplib__.lib.bp_bbox" then
+	return require("__bplib__.lib.bp_bbox")
+end
 local lib = {}
 
 local mlib = require("__bplib__.api.math")
-local internal = require("__bplib__.internal")
+local empirical_data = require("__bplib__.lib.empirical-data")
 
 local pos_get = mlib.pos_get
 local bbox_new = mlib.bbox_new
@@ -21,7 +23,7 @@ local bbox_union = mlib.bbox_union
 local bbox_round = mlib.bbox_round
 local floor = math.floor
 local ZERO = { 0, 0 }
-local get_snap_data_for_direction = internal.get_snap_data_for_direction
+local get_snap_data_for_direction = empirical_data.get_snap_data_for_direction
 local empty = {}
 
 ---Generically compute the bounding box of a blueprint entity in blueprint space.

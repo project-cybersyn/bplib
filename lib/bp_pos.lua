@@ -3,11 +3,11 @@
 -- Compute and transform entity positions.
 --------------------------------------------------------------------------------
 
-if ... ~= "__bplib__.pos" then return require("__bplib__.pos") end
+if ... ~= "__bplib__.lib.bp_pos" then return require("__bplib__.lib.bp_pos") end
 local lib = {}
 
 local mlib = require("__bplib__.api.math")
-local snap_lib = require("__bplib__.snap")
+local snap_lib = require("__bplib__.lib.bp_snap")
 
 local floor = math.floor
 local pos_get = mlib.pos_get

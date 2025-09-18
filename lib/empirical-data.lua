@@ -1,11 +1,16 @@
---------------------------------------------------------------------------------
--- SNAP DATA FOR UNUSUAL ENTITIES
---
--- This is used to override the behavior of the snapping algorithm when
--- an entity can't be placed using ordinary snapping rules. Mods can add
--- their own entities here by using the remote interface.
---------------------------------------------------------------------------------
+---Certain entities in Factorio have non-standard geometry. For those entities,
+---custom empirical tables must be provided in order to compute information
+---about their bounding boxes and how they snap to the tile grid.
+---
+---At the time of this writing, I believe it is impossible for mods to create
+---custom entities that are as "Cursed" as the ones listed below, so for the
+---time being the remote interface for registering more of these is disabled.
+---Should community need arise, a new interface for adding entities will
+---be published through the `mod-data` API.
 
+local lib = {}
+
+---Straight-straight rails are 2x2. Diagonal-straight rails are 4x4.
 ---@type bplib.internal.DirectionalSnapData
 local straight_rail_table = {
 	[0] = { -1, -1, 1, 1, 1, 1 },
@@ -46,6 +51,7 @@ local curved_rail_b_table = {
 	[14] = { -2, -2, 2, 2, 1, 1 },
 }
 
+---Half-diagonal rails are always 4x4.
 ---@type bplib.internal.DirectionalSnapData
 local half_diagonal_rail_table = {
 	[0] = { -2, -2, 2, 2, 1, 1 },
@@ -76,23 +82,13 @@ local custom_entity_types = {
 	},
 }
 
----@type bplib.internal.EntityDirectionalSnapData
-local custom_entity_names = {}
-
----@return bplib.internal.EntityDirectionalSnapData
-_G.api.get_custom_snap_types = function() return custom_entity_types end
-
----@return bplib.internal.EntityDirectionalSnapData
-_G.api.get_custom_snap_names = function() return custom_entity_names end
-
----@param name string
----@param snap_data bplib.internal.DirectionalSnapData
-_G.api.set_custom_snap_type = function(name, snap_data)
-	custom_entity_types[name] = snap_data
+---@param bp_entity BlueprintEntity
+---@param eproto LuaEntityPrototype
+---@return bplib.internal.SnapData|nil
+function lib.get_snap_data_for_direction(bp_entity, eproto)
+	local type_info = custom_entity_types[eproto.type]
+	if type_info then return type_info[bp_entity.direction or 0] end
+	return nil
 end
 
----@param name string
----@param snap_data bplib.internal.DirectionalSnapData
-_G.api.set_custom_snap_name = function(name, snap_data)
-	custom_entity_names[name] = snap_data
-end
+return lib

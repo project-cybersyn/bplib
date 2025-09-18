@@ -7,8 +7,8 @@
 if ... ~= "__bplib__.blueprint" then return require("__bplib__.blueprint") end
 local lib = {}
 
-local bbox_lib = require("__bplib__.lib.bbox")
-local pos_lib = require("__bplib__.pos")
+local bbox_lib = require("__bplib__.lib.bp_bbox")
+local pos_lib = require("__bplib__.lib.bp_pos")
 
 local get_blueprint_bbox = bbox_lib.get_blueprint_bbox
 local get_blueprint_world_positions = pos_lib.get_blueprint_world_positions

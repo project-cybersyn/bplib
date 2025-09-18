@@ -1,4 +1,4 @@
-local event = require("__bplib__.lib.events").create_event
+local event = require("lib.core.events").create_event
 
 _G.on_init, _G.raise_init = event("init", "nil", "nil", "nil", "nil", "nil")
 

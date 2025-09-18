@@ -9,13 +9,15 @@
 -- code.
 --------------------------------------------------------------------------------
 
-if ... ~= "__bplib__.snap" then return require("__bplib__.snap") end
+if ... ~= "__bplib__.lib.bp_snap" then
+	return require("__bplib__.lib.bp_snap")
+end
 local lib = {}
 
 local mlib = require("__bplib__.api.math")
-local internal = require("__bplib__.internal")
+local empirical_data = require("__bplib__.lib.empirical-data")
 
-local get_snap_data_for_direction = internal.get_snap_data_for_direction
+local get_snap_data_for_direction = empirical_data.get_snap_data_for_direction
 local floor = math.floor
 local bbox_get = mlib.bbox_get
 local pos_new = mlib.pos_new

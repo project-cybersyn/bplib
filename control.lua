@@ -2,8 +2,8 @@
 -- BPLIB CONTROL PHASE
 --------------------------------------------------------------------------------
 
-local counters = require("__bplib__.lib.counters")
-local events = require("__bplib__.lib.events")
+local counters = require("lib.core.counters")
+local events = require("lib.core.events")
 local blueprint = require("__bplib__.blueprint")
 
 --------------------------------------------------------------------------------
@@ -38,7 +38,6 @@ _G.api = {}
 require("events")
 require("storage")
 
-require("snap-data")
 require("tags")
 
 -- Enable support for the Global Variable Viewer debugging mod, if it is
