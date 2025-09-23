@@ -7,7 +7,7 @@
   "homepage": "https://github.com/project-cybersyn/bplib",
   "description": "A utility library for manipulating Factorio blueprints.",
   "factorio_version": "2.0",
-  "dependencies": [ "base >= 2.0.66" ],
+  "dependencies": [ "base >= 2.0.67" ],
   "package": {
     "git_publish_branch": "main",
     "ignore": [ "crowdin.yml", "stylua.toml", "tests", "doc" ],
