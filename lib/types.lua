@@ -19,3 +19,12 @@
 
 ---Snap data associated with a collection of entity names or type names.
 ---@alias bplib.internal.EntityDirectionalSnapData {[string]: bplib.internal.DirectionalSnapData}
+
+---@class bplib.PrebuildEntity
+---@field public id int The unique prebuild id.
+
+---@class bplib.PrebuildBlueprint
+---@field public id int The unique prebuild id.
+
+---Storage for entities being tracked by BPLib.
+---@class (exact) bplib.Entity
