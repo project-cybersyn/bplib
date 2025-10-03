@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.4
+Date: 2025-10-03
+  Changes:
+    - Requires Factorio 2.0.69 or later.
+    - Uses new `get_selected_record` API to avoid previous issues with `is_preview`.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.3
 Date: 2025-09-14
   Bugfixes:
