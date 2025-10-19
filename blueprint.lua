@@ -264,6 +264,14 @@ function BlueprintBuild:map_blueprint_indices_to_overlapping_entities(
 		if entity_filter and not entity_filter(bp_entity) then goto continue end
 		-- TODO: due to quality this needs to use `find_entities_filtered`.
 		local world_entity = surface.find_entity(bp_entity.name, pos)
+		if not world_entity then
+			local ghosts = surface.find_entities_filtered({
+				name = "entity-ghost",
+				ghost_name = bp_entity.name,
+				position = pos,
+			})
+			if ghosts and #ghosts > 0 then world_entity = ghosts[1] end
+		end
 		if world_entity then overlap[index] = world_entity end
 		::continue::
 	end

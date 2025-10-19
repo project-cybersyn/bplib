@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.5
+Date: 2025-10-03
+  Changes:
+    - map_blueprint_indices_to_overlapping_entities now also includes overlapping ghosts, allowing mods to react to blueprints being placed over ghosts.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.4
 Date: 2025-10-03
   Changes:
