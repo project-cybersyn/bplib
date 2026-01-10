@@ -1,7 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.7
-Date: ????
-  Changes:
+Date: 2026-01-10
+  Bugfixes:
+    - Fixed issue involving positioning of blueprints with compound entities where one of the entities was inside the bbox of another.
+    - Fixed several issues involving snapping of blueprints with rails in them.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.6
 Date: 2025-10-22
