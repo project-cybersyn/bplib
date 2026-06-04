@@ -21,6 +21,7 @@ Its primary purpose is to address the following pain points for developers worki
 bplib can raise an event whenever your custom entity is extracted into a user blueprint, giving you a writable blueprint object to which you can store custom tags. First register your entity for extraction events:
 ```lua
 -- data.lua
+-- Add one entry like this for every entity you want to track
 data.raw["mod-data"]["bplib"].data.extract_entity_names["your-entity"] = true
 ```
 
@@ -54,6 +55,7 @@ bplib can raise an event whenever a player pre-builds a blueprint involving your
 Register:
 ```lua
 -- data.lua
+-- Add one entry like this for every entity you want to track
 data.raw["mod-data"]["bplib"].data.position_entity_names["your-entity"] = true
 ```
 
@@ -88,6 +90,7 @@ bplib can raise an event whenever a player pre-builds a blueprint where an entit
 Register:
 ```lua
 -- data.lua
+-- Add one entry like this for every entity you want to track
 data.raw["mod-data"]["bplib"].data.overlap_entity_names["your-entity"] = true
 ```
 
@@ -134,7 +137,7 @@ remote.call("bplib", "register_overlap_entity", "my-entity-name")
 
 Using the remote interface, it is possible to ask bplib to *always* calculate blueprint geometry, ignoring individual entity registration. This will cause the `bplib-positions` event to fire whenever any blueprint is built, and all entities to be listed in the `positions` field of the event.
 
-**WARNING: This WILL cause high CPU usage and lag when deploying large blueprints, drag-building blueprints, and in multiplayer. You have been warned!**
+**WARNING: Using this mode will cause high CPU usage and lag when deploying large blueprints, drag-building blueprints, and in multiplayer. You have been warned!**
 
 ```lua
 -- Force bplib to always compute entity positions.
