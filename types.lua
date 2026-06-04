@@ -2,27 +2,38 @@
 -- BLUEPRINT LIBRARY
 -- Data types and enums.
 --------------------------------------------------------------------------------
-
-if ... ~= "__bplib__.types" then return require("__bplib__.types") end
 local lib = {}
 
 ---A blueprint-like object
 ---@alias bplib.Blueprintish LuaItemStack|LuaRecord
 
----Custom empirical data for a single direction of a single entity. Entries are:
----[1] = Left offset from position to bbox edge.
----[2] = Top offset from position to bbox edge.
----[3] = Right offset from position to bbox edge.
----[4] = Bottom offset from position to bbox edge.
----[5] = 2x2 snapping: required parity of X coord of final world position (1=odd, 2=even, `nil`=don't use 2x2 snapping)
----[6] = 2x2 snapping: required parity of Y coord of final world position (1=odd, 2=even, `nil`=don't use 2x2 snapping)
----@alias bplib.SnapData { [1]: int, [2]: int, [3]: int, [4]: int, [5]: int|nil, [6]: int|nil }
+---@class bplib.ModData
+---@field overlap_entity_names {[string]: true} A set of entity names that will trigger `bplib-overlaps` events.
+---@field position_entity_names {[string]: true} A set of entity names that will trigger `bplib-positions` events.
+---@field extract_entity_names {[string]: true} A set of entity names that will trigger `bplib-extract` events.
 
----Snap data associated with each valid direction of an entity. Direction `0`
----MUST be provided and is used as a fallback for directions not provided.
----@alias bplib.DirectionalSnapData {[defines.direction]: bplib.SnapData}
+---@class bplib.ExtractEvent
+---@field name "bplib-extract"
+---@field tick MapTick
+---@field player_index uint32 Player who is extracting entities into a blueprint.
+---@field blueprint bplib.Blueprintish The blueprint that entities are being extracted into.
+---@field entities {[uint32]: LuaEntity} Map from blueprint entity indices to world entities that were extracted into the blueprint.
 
----Snap data associated with a collection of entity names or type names.
----@alias bplib.EntityDirectionalSnapData {[string]: bplib.DirectionalSnapData}
+---@class bplib.PositionsEvent
+---@field name "bplib-positions"
+---@field tick MapTick
+---@field player_index uint32 Player who is applying a blueprint.
+---@field blueprint bplib.Blueprintish The blueprint that is being applied.
+---@field bbox BoundingBox The bounding box of the area where the blueprint is being applied.
+---@field positions {[uint32]: MapPosition} Map from blueprint entity indices to world positions where those entities will be placed.
+
+---@class bplib.OverlapsEvent
+---@field name "bplib-overlaps"
+---@field tick MapTick
+---@field player_index uint32 Player who is applying a blueprint.
+---@field blueprint bplib.Blueprintish The blueprint that is being applied.
+---@field bbox BoundingBox The bounding box of the area where the blueprint is being applied.
+---@field positions {[uint32]: MapPosition} Map from blueprint entity indices to world positions where those entities will be placed. This contains all positions that were calculated by bplib, regardless of overlap.
+---@field overlaps {[uint32]: LuaEntity} Map from blueprint entity indices to world entities that overlap with those blueprint entities. This contains only overlaps.
 
 return lib
