@@ -13,7 +13,6 @@ local get_actual_blueprint = actual_lib.get_actual_blueprint
 local get_blueprint_bbox = bbox_lib.get_blueprint_bbox
 local get_blueprint_world_positions = pos_lib.get_blueprint_world_positions
 
-
 --------------------------------------------------------------------------------
 -- BLUEPRINTBASE
 -- Common interface for blueprints being setup or built.
@@ -34,6 +33,7 @@ local BlueprintBase = {}
 BlueprintBase.__index = BlueprintBase
 
 ---Gets the actual blueprint being manipulated, stripped of containing books.
+---@deprecated Use the bplib 2.0 api
 function BlueprintBase:get_actual()
 	if not self.actual then
 		self.actual = get_actual_blueprint(self.player, self.record, self.stack)
@@ -48,6 +48,7 @@ end
 
 ---Get the stored entities from the blueprint
 ---@param force boolean? If `true`, forcibly refetches from the api even if cached.
+---@deprecated Use the bplib 2.0 api
 function BlueprintBase:get_entities(force)
 	if force or not self.entities then
 		local actual = self:get_actual()
@@ -58,6 +59,7 @@ function BlueprintBase:get_entities(force)
 end
 
 ---Get the bounding box of the blueprint in blueprint coordinate space.
+---@deprecated Use the bplib 2.0 api
 function BlueprintBase:get_bpspace_bbox()
 	if not self.bpspace_bbox then
 		local bp_entities = self:get_entities()
@@ -90,6 +92,7 @@ lib.BlueprintSetup = BlueprintSetup
 ---Factorio event. This `BlueprintSetup` can be used to map tags from world
 ---entities into the pickled blueprint entities.
 ---@param setup_event EventData.on_player_setup_blueprint
+---@deprecated Use the bplib 2.0 api
 function BlueprintSetup:new(setup_event)
 	local player = game.get_player(setup_event.player_index)
 	if not player then return nil end
@@ -105,6 +108,7 @@ end
 
 ---Retrieve a map from blueprint entity indices to the real-world entities
 ---that are being blueprinted.
+---@deprecated Use the bplib 2.0 api
 function BlueprintSetup:map_blueprint_indices_to_world_entities()
 	if not self.bp_to_world then
 		if not self.lazy_bp_to_world or not self.lazy_bp_to_world.valid then
@@ -119,6 +123,7 @@ end
 ---pre-existing tags. Passing `nil` will remove all tags.
 ---@param bp_entity_index uint
 ---@param tags Tags|nil
+---@deprecated Use the bplib 2.0 api
 function BlueprintSetup:set_tags(bp_entity_index, tags)
 	local actual = self:get_actual()
 	if not actual then return end
@@ -129,6 +134,7 @@ end
 ---pre-existing tags with the same key.
 ---@param bp_entity_index uint
 ---@param tags Tags
+---@deprecated Use the bplib 2.0 api
 function BlueprintSetup:apply_tags(bp_entity_index, tags)
 	local actual = self:get_actual()
 	if not actual then return end
@@ -147,6 +153,7 @@ end
 ---@param bp_entity_index integer
 ---@param key string
 ---@param value AnyBasic
+---@deprecated Use the bplib 2.0 api
 function BlueprintSetup:apply_tag(bp_entity_index, key, value)
 	local actual = self:get_actual()
 	if not actual then return end
@@ -175,6 +182,7 @@ lib.BlueprintBuild = BlueprintBuild
 ---Create a `BlueprintBuild` corresponding to an `on_pre_build` Factorio
 ---event. Returns `nil` if the player is not building a blueprint.
 ---@param pre_build_event EventData.on_pre_build
+---@deprecated Use the bplib 2.0 api
 function BlueprintBuild:new(pre_build_event)
 	local player = game.get_player(pre_build_event.player_index)
 	if not player or not player.is_cursor_blueprint() then return nil end
@@ -195,6 +203,7 @@ end
 ---Get a map from blueprint entity indices to
 ---the positions in worldspace of where those entities will be when the
 ---blueprint is built.
+---@deprecated Use the bplib 2.0 api
 function BlueprintBuild:map_blueprint_indices_to_world_positions()
 	if self.bp_to_world_pos then return self.bp_to_world_pos end
 	local bbox = self:get_bpspace_bbox()
@@ -224,6 +233,7 @@ end
 ---is placed.
 ---@param entity_filter? fun(bp_entity: BlueprintEntity): boolean? Optional filter function to apply to the blueprint entities before checking for overlap.
 ---@return {[int]: LuaEntity}? overlap The overlapping entities indexed by the blueprint entity index that will overlap it.
+---@deprecated Use the bplib 2.0 api
 function BlueprintBuild:map_blueprint_indices_to_overlapping_entities(
 	entity_filter
 )

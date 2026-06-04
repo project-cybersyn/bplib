@@ -4,6 +4,7 @@ local actual_lib = require("lib.core.blueprint.actual")
 local bbox_lib = require("lib.core.blueprint.bbox")
 local pos_lib = require("lib.core.blueprint.pos")
 local mpos_lib = require("lib.core.math.pos")
+require("types")
 
 local pairs = pairs
 local next = next

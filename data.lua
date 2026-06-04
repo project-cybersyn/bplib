@@ -1,3 +1,5 @@
+require("types")
+
 data:extend({
 	{
 		type = "custom-event",
