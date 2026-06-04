@@ -2,11 +2,11 @@
 Version: 2.0.0
 Date: 2026-06-01
   Changes:
-    - Added control-phase API driven by mod-data and custom events. All new consumers should use this API. See `README.md` for more details.
+    - Added new API driven by mod-data and custom events. All consumers should use this API. See `README.md` for more details.
     - The API in `blueprint.lua` is hereby marked deprecated and will be removed in a future release. It is recommended that all consumers switch to the new API as soon as possible.
   Optimizations:
-    - Consumers using the new API will no longer cause linear scaling issues by repeating calculations.
-    - Consumers using the new API will benefit from stricter entity filtering, which should reduce the CPU impact of building entities not registered with bplib.
+    - Consumers using the new API will no longer cause linear scaling issues by repeating calculations across mods.
+    - Consumers using the new API will benefit from stricter entity filtering, reducing the CPU impact of building entities not registered with bplib.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.7
 Date: 2026-01-10

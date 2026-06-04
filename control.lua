@@ -24,6 +24,7 @@ local position_entity_names =
 	tlib.assign({}, bplib_mod_data.position_entity_names)
 local overlap_entity_names =
 	tlib.assign({}, bplib_mod_data.overlap_entity_names)
+local get_all_positions = false
 
 --------------------------------------------------------------------------------
 -- BLUEPRINT EXTRACTION
@@ -106,7 +107,13 @@ events.bind(
 				overlap_index_set[index] = true
 			end
 		end
-		if (not position_index_set) and not overlap_index_set then return end
+		if
+			not get_all_positions
+			and not position_index_set
+			and not overlap_index_set
+		then
+			return
+		end
 
 		local surface = player.surface
 		local snap = bp.blueprint_snap_to_grid
@@ -114,7 +121,8 @@ events.bind(
 		local snap_absolute = bp.blueprint_absolute_snapping
 
 		local function filter(bp_entity, index)
-			return (position_index_set and position_index_set[index])
+			return get_all_positions
+				or (position_index_set and position_index_set[index])
 				or (overlap_index_set and overlap_index_set[index])
 		end
 
@@ -133,7 +141,7 @@ events.bind(
 			nil
 		)
 
-		if position_index_set then
+		if position_index_set or get_all_positions then
 			script.raise_event("bplib-positions", {
 				player_index = event.player_index,
 				blueprint = bp,
@@ -200,6 +208,11 @@ end
 function remote_interface.register_extract_entity(entity_name)
 	extract_entity_names[entity_name] = true
 end
+
+---Set bplib to compute positions for ALL entities in EVERY blueprint. It is
+---highly recommended to avoid this, as it WILL cause significant CPU usage
+---and muiltiplayer lag.
+function remote_interface.always_compute_positions() get_all_positions = true end
 
 remote.add_interface("bplib", remote_interface)
 

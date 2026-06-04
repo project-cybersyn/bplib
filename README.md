@@ -14,6 +14,8 @@ Its primary purpose is to address the following pain points for developers worki
 
 ## Basic Usage
 
+**NOTE TO DEVELOPERS:** bplib 2.0 has a new API. It is recommended that you move to the new API as soon as possible. The old `blueprint.lua` API still exists but is considered deprecated and will be removed in a future release.
+
 ### Extraction Events
 
 bplib can raise an event whenever your custom entity is extracted into a user blueprint, giving you a writable blueprint object to which you can store custom tags. First register your entity for extraction events:
@@ -81,7 +83,7 @@ Event type:
 
 ### Overlap Events
 
-bplib can raise an event whenever a player pre-builds a blueprint where an entity in that blueprint would overlap with an entity with the same name that already exists in the world. This can be used to correctly transfer custom entity settings onto the pre-existing entity.
+bplib can raise an event whenever a player pre-builds a blueprint where an entity in that blueprint would overlap with an entity with the same name (or ghost thereof) that already exists in the world. This can be used to correctly transfer custom entity settings onto the pre-existing entity.
 
 Register:
 ```lua
@@ -126,6 +128,17 @@ remote.call("bplib", "register_extract_entity", "my-entity-name")
 remote.call("bplib", "register_position_entity", "my-entity-name")
 -- Register an entity for overlap events
 remote.call("bplib", "register_overlap_entity", "my-entity-name")
+```
+
+## Universal mode
+
+Using the remote interface, it is possible to ask bplib to *always* calculate blueprint geometry, ignoring individual entity registration. This will cause the `bplib-positions` event to fire whenever any blueprint is built, and all entities to be listed in the `positions` field of the event.
+
+**WARNING: This WILL cause high CPU usage and lag when deploying large blueprints, drag-building blueprints, and in multiplayer. You have been warned!**
+
+```lua
+-- Force bplib to always compute entity positions.
+remote.call("bplib", "always_compute_positions")
 ```
 
 ## Contributing
