@@ -215,5 +215,3 @@ end
 function remote_interface.always_compute_positions() get_all_positions = true end
 
 remote.add_interface("bplib", remote_interface)
-
--- require("tests.test-control")

@@ -22,5 +22,3 @@ data:extend({
 		} --[[@as bplib.ModData]],
 	},
 })
-
--- require("tests.test-data")
