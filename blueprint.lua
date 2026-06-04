@@ -3,40 +3,16 @@
 -- Primary end-user interfaces.
 --------------------------------------------------------------------------------
 
-if ... ~= "__bplib__.blueprint" then return require("__bplib__.blueprint") end
 local lib = {}
 
-local bbox_lib = require("__bplib__.bbox")
-local pos_lib = require("__bplib__.pos")
+local bbox_lib = require("lib.core.blueprint.bbox")
+local pos_lib = require("lib.core.blueprint.pos")
+local actual_lib = require("lib.core.blueprint.actual")
 
+local get_actual_blueprint = actual_lib.get_actual_blueprint
 local get_blueprint_bbox = bbox_lib.get_blueprint_bbox
 local get_blueprint_world_positions = pos_lib.get_blueprint_world_positions
 
----Given either a record or a stack, which might be a blueprint or a blueprint book,
----return the actual blueprint involved, stripped of any containing books.
----If both arguments are given, the record is preferred over the stack.
----@param player LuaPlayer The player who is manipulating the blueprint.
----@param record? LuaRecord
----@param stack? LuaItemStack
----@return bplib.Blueprintish? blueprintish The actual blueprint involved, stripped of any containing books or nil if not found.
-local function get_actual_blueprint(player, record, stack)
-	-- Determine the actual blueprint being held is way harder than it should be.
-	-- h/t Xorimuth on factorio discord for this code
-	if record then
-		while record and record.type == "blueprint-book" do
-			record = record.get_selected_record(player)
-		end
-		if record and record.type == "blueprint" then return record end
-	elseif stack then
-		if not stack.valid_for_read then return end
-		while stack and stack.is_blueprint_book do
-			stack =
-				stack.get_inventory(defines.inventory.item_main)[stack.active_index]
-		end
-		if stack and stack.is_blueprint then return stack end
-	end
-end
-lib.get_actual_blueprint = get_actual_blueprint
 
 --------------------------------------------------------------------------------
 -- BLUEPRINTBASE
@@ -87,9 +63,7 @@ function BlueprintBase:get_bpspace_bbox()
 		local bp_entities = self:get_entities()
 		if not bp_entities or #bp_entities == 0 then return end
 
-		local bboxes = {} -- XXX
-		self.bp_to_bbox = bboxes
-		local bbox, snap_index = get_blueprint_bbox(bp_entities, bboxes)
+		local bbox, snap_index = get_blueprint_bbox(bp_entities)
 		self.bpspace_bbox = bbox
 		self.snap_index = snap_index
 	end
