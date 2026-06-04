@@ -16,14 +16,14 @@ local lib = {}
 ---@field name "bplib-extract"
 ---@field tick MapTick
 ---@field player_index uint32 Player who is extracting entities into a blueprint.
----@field blueprint bplib.Blueprintish The blueprint that entities are being extracted into.
+---@field blueprint LuaItemStack|LuaRecord The blueprint that entities are being extracted into.
 ---@field entities {[uint32]: LuaEntity} Map from blueprint entity indices to world entities that were extracted into the blueprint.
 
 ---@class bplib.PositionsEvent
 ---@field name "bplib-positions"
 ---@field tick MapTick
 ---@field player_index uint32 Player who is applying a blueprint.
----@field blueprint bplib.Blueprintish The blueprint that is being applied.
+---@field blueprint LuaItemStack|LuaRecord The blueprint that is being applied.
 ---@field bbox BoundingBox The bounding box of the area where the blueprint is being applied.
 ---@field positions {[uint32]: MapPosition} Map from blueprint entity indices to world positions where those entities will be placed.
 
@@ -31,7 +31,7 @@ local lib = {}
 ---@field name "bplib-overlaps"
 ---@field tick MapTick
 ---@field player_index uint32 Player who is applying a blueprint.
----@field blueprint bplib.Blueprintish The blueprint that is being applied.
+---@field blueprint LuaItemStack|LuaRecord The blueprint that is being applied.
 ---@field bbox BoundingBox The bounding box of the area where the blueprint is being applied.
 ---@field positions {[uint32]: MapPosition} Map from blueprint entity indices to world positions where those entities will be placed. This contains all positions that were calculated by bplib, regardless of overlap.
 ---@field overlaps {[uint32]: LuaEntity} Map from blueprint entity indices to world entities that overlap with those blueprint entities. This contains only overlaps.
