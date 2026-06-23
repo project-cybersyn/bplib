@@ -14,7 +14,7 @@ Its primary purpose is to address the following pain points for developers worki
 
 ## Basic Usage
 
-**NOTE TO DEVELOPERS:** bplib 2.0 has a new API. It is recommended that you move to the new API as soon as possible. The old `blueprint.lua` API still exists but is considered deprecated and will be removed in a future release.
+**NOTE TO DEVELOPERS:** As of Factorio 2.1, the previously-deprecated `blueprint.lua` API is removed altogether. You must port your mods to the new 2.0 API.
 
 ### Extraction Events
 
