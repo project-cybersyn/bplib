@@ -1,7 +1,9 @@
 ---------------------------------------------------------------------------------------------------
-Version: 2.0.1
+Version: 2.1.0
 Date: ????
   Changes:
+    - Updated for Factorio 2.1.
+    - As all mods need to be updated for 2.1, the deprecated API in `blueprint.lua` has been removed. All consumers should use the new API.
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.0
 Date: 2026-06-01
