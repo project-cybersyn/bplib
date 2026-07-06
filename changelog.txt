@@ -1,7 +1,10 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.1
 Date: ????
-  Changes:
+  Bugfixes:
+    - Fixed a blueprint rail snapping issue.
+    - Blueprint snapping now correctly forces `space-platform-hub` to 0,0 in worldspace.
+    - Fixed blueprint snapping issues with `cargo-bay` and `cargo-landing-pad`.
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.0
 Date: 2026-06-23

@@ -1,16 +1,13 @@
 local tlib = require("lib.core.table")
 local events = require("lib.core.event")
 local actual_lib = require("lib.core.blueprint.actual")
-local bbox_lib = require("lib.core.blueprint.bbox")
-local pos_lib = require("lib.core.blueprint.pos")
+local bp_geom_lib = require("lib.core.blueprint.geometry")
 local mpos_lib = require("lib.core.math.pos")
 require("types")
 
 local pairs = pairs
 local next = next
 local get_actual_blueprint = actual_lib.get_actual_blueprint
-local get_blueprint_bbox = bbox_lib.get_blueprint_bbox
-local get_blueprint_world_positions = pos_lib.get_blueprint_world_positions
 local pos_close = mpos_lib.pos_close
 
 --------------------------------------------------------------------------------
@@ -127,20 +124,18 @@ events.bind(
 				or (overlap_index_set and overlap_index_set[index])
 		end
 
-		local bbox, snap_index = get_blueprint_bbox(entities)
-		local bp_to_world_pos = get_blueprint_world_positions(
-			entities,
-			filter,
-			bbox,
-			snap_index,
-			event.position,
+		local geom = bp_geom_lib.BlueprintGeometry:new(entities)
+		geom:set_orientation(
 			event.direction,
 			event.flip_horizontal,
-			event.flip_vertical,
-			snap_absolute and snap or nil,
-			snap_offset,
-			nil
+			event.flip_vertical
 		)
+		if snap_absolute then geom:set_snapping(snap, snap_offset) end
+		geom:compute_bbox()
+		geom:place(event.position)
+		geom:place_entities()
+		local bbox = geom.placement_bbox
+		local bp_to_world_pos = geom:get_world_positions()
 
 		if position_index_set or get_all_positions then
 			script.raise_event("bplib-positions", {
@@ -170,8 +165,8 @@ events.bind(
 								and pos_close(e.position, pos)
 						end
 					)
-					overlapped = overlapped[1]
-					if overlapped then overlaps[index] = overlapped end
+					local first_overlapped = overlapped[1]
+					if first_overlapped then overlaps[index] = first_overlapped end
 				end
 			end
 			if next(overlaps) then
