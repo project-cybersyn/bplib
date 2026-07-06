@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.1
-Date: ????
+Date: 2026-07-06
   Bugfixes:
     - Fixed a blueprint rail snapping issue.
     - Blueprint snapping now correctly forces `space-platform-hub` to 0,0 in worldspace.
