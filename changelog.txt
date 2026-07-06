@@ -1,7 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.2
 Date: ????
-  Changes:
+  Bugfixes:
+    - Fixed a geometry miscalculation that happened when the unit-cell of an absolutely snapped blueprint was non-square.
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.1
 Date: 2026-07-06
