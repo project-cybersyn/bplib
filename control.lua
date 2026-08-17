@@ -137,6 +137,14 @@ events.bind(
 		local bbox = geom.placement_bbox
 		local bp_to_world_pos = geom:get_world_positions()
 
+		---@type Core.BlueprintOrientationData
+		local orientation_info = {
+			position = event.position,
+			direction = event.direction,
+			flip_horizontal = event.flip_horizontal,
+			flip_vertical = event.flip_vertical,
+		}
+
 		if position_index_set or get_all_positions then
 			script.raise_event("bplib-positions", {
 				player_index = event.player_index,
@@ -145,6 +153,7 @@ events.bind(
 				positions = bp_to_world_pos,
 				name = "bplib-positions",
 				tick = event.tick,
+				orientation_info = orientation_info,
 			})
 		end
 
@@ -178,6 +187,7 @@ events.bind(
 					overlaps = overlaps,
 					name = "bplib-overlaps",
 					tick = event.tick,
+					orientation_info = orientation_info,
 				})
 			end
 		end
