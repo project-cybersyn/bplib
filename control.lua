@@ -154,6 +154,8 @@ events.bind(
 				name = "bplib-positions",
 				tick = event.tick,
 				orientation_info = orientation_info,
+				surface_index = surface.index,
+				cause = event,
 			})
 		end
 
@@ -188,6 +190,8 @@ events.bind(
 					name = "bplib-overlaps",
 					tick = event.tick,
 					orientation_info = orientation_info,
+					surface_index = surface.index,
+					cause = event,
 				})
 			end
 		end

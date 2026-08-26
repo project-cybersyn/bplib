@@ -82,6 +82,8 @@ Event type:
 ---@field bbox BoundingBox The bounding box of the area where the blueprint is being applied.
 ---@field positions {[uint32]: MapPosition} Map from blueprint entity indices to world positions where those entities will be placed.
 ---@field orientation_info {position: MapPosition, direction: defines.direction, flip_horizontal?: boolean, flip_vertical?: boolean} Information about how the blueprint was oriented when placed
+---@field surface_index The surface where the blueprint was placed.
+---@field cause any The Factorio event that caused this bplib event.
 ```
 
 ### Overlap Events
@@ -120,6 +122,8 @@ Event type:
 ---@field positions {[uint32]: MapPosition} Map from blueprint entity indices to world positions where those entities will be placed. This contains all positions that were calculated by bplib, regardless of overlap.
 ---@field overlaps {[uint32]: LuaEntity} Map from blueprint entity indices to world entities that overlap with those blueprint entities. This contains only overlaps.
 ---@field orientation_info {position: MapPosition, direction: defines.direction, flip_horizontal?: boolean, flip_vertical?: boolean} Information about how the blueprint was oriented when placed
+---@field surface_index The surface where the blueprint was placed.
+---@field cause any The Factorio event that caused this bplib event.
 ```
 
 ## Dynamic Registration

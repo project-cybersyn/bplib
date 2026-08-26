@@ -2,6 +2,8 @@
 Version: 2.1.4
 Date: ????
   Changes:
+    - Added `surface_index` field to the `bplib-positions` and `bplib-overlaps` events.
+    - Added `cause` field to the `bplib-positions` and `bplib-overlaps` events.
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.3
 Date: 2026-08-16
